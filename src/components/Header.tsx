@@ -1,8 +1,9 @@
 import { Wifi } from "lucide-react";
+import ThemeToggle from "./ThemeToggle";
 
 const Header = () => {
   return (
-    <header className="w-full bg-card border-b border-border">
+    <header className="w-full bg-card/80 backdrop-blur-sm border-b border-border sticky top-0 z-50">
       <div className="container py-4 flex items-center justify-between">
         <div className="flex items-center gap-3">
           {/* DING Logo */}
@@ -17,7 +18,10 @@ const Header = () => {
           </div>
         </div>
         
-        <p className="text-sm font-medium text-secondary">Making Technology Work for You</p>
+        <div className="flex items-center gap-4">
+          <p className="text-sm font-medium text-secondary hidden sm:block">Making Technology Work for You</p>
+          <ThemeToggle />
+        </div>
       </div>
     </header>
   );

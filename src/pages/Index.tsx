@@ -6,6 +6,7 @@ import PhoneInput from "@/components/PhoneInput";
 import EcoCashButton from "@/components/EcoCashButton";
 import SuccessScreen from "@/components/SuccessScreen";
 import Stepper from "@/components/Stepper";
+import PixelBackground from "@/components/PixelBackground";
 import { Wifi, ArrowRight, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -94,6 +95,7 @@ const Index = () => {
   if (purchaseComplete) {
     return (
       <div className="min-h-screen flex flex-col bg-background">
+        <PixelBackground />
         <Header />
         <SuccessScreen
           voucherCode={voucherCode}
@@ -108,6 +110,7 @@ const Index = () => {
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
+      <PixelBackground />
       <Header />
 
       <main className="flex-1 container py-8 space-y-8">
@@ -137,7 +140,7 @@ const Index = () => {
               <h3 className="text-lg font-semibold text-foreground text-center">
                 Choose Your Data Package
               </h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 max-w-3xl mx-auto">
+              <div className="flex flex-col gap-3 max-w-md mx-auto">
                 {wifiPackages.map((pkg) => (
                   <VoucherCard
                     key={pkg.gigs}
