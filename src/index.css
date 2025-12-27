@@ -6,8 +6,8 @@
 
 @layer base {
   :root {
-    /* DING Brand Colors */
-    --background: 210 20% 99%;
+    /* DING Brand Colors - Matching ding.co.zw */
+    --background: 0 0% 100%;
     --foreground: 220 14% 16%;
 
     --card: 0 0% 100%;
@@ -16,20 +16,20 @@
     --popover: 0 0% 100%;
     --popover-foreground: 220 14% 16%;
 
-    /* DING Blue */
-    --primary: 222 80% 40%;
+    /* DING Orange (primary CTA color from website) */
+    --primary: 24 95% 53%;
     --primary-foreground: 0 0% 100%;
 
-    /* Lighter Blue */
-    --secondary: 217 91% 60%;
+    /* DING Blue (navigation/links) */
+    --secondary: 199 89% 48%;
     --secondary-foreground: 0 0% 100%;
 
     /* Muted grays */
     --muted: 210 40% 96%;
     --muted-foreground: 220 9% 46%;
 
-    /* DING Red accent */
-    --accent: 0 84% 60%;
+    /* DING Purple gradient accent */
+    --accent: 271 81% 56%;
     --accent-foreground: 0 0% 100%;
 
     /* EcoCash Green */
@@ -45,16 +45,19 @@
 
     --border: 214 32% 91%;
     --input: 214 32% 91%;
-    --ring: 222 80% 40%;
+    --ring: 24 95% 53%;
 
     --radius: 0.75rem;
+
+    /* Gradient for hero sections */
+    --gradient-hero: linear-gradient(135deg, hsl(271 81% 56%) 0%, hsl(330 81% 60%) 50%, hsl(24 95% 53%) 100%);
 
     /* Shadows */
     --shadow-sm: 0 1px 2px 0 hsl(220 14% 16% / 0.05);
     --shadow-md: 0 4px 6px -1px hsl(220 14% 16% / 0.1), 0 2px 4px -2px hsl(220 14% 16% / 0.1);
     --shadow-lg: 0 10px 15px -3px hsl(220 14% 16% / 0.1), 0 4px 6px -4px hsl(220 14% 16% / 0.1);
-    --shadow-card: 0 2px 8px -2px hsl(222 80% 40% / 0.12);
-    --shadow-card-hover: 0 8px 20px -4px hsl(222 80% 40% / 0.2);
+    --shadow-card: 0 2px 8px -2px hsl(24 95% 53% / 0.12);
+    --shadow-card-hover: 0 8px 20px -4px hsl(24 95% 53% / 0.2);
 
     --sidebar-background: 0 0% 98%;
     --sidebar-foreground: 240 5.3% 26.1%;
@@ -63,7 +66,7 @@
     --sidebar-accent: 240 4.8% 95.9%;
     --sidebar-accent-foreground: 240 5.9% 10%;
     --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --sidebar-ring: 24 95% 53%;
   }
 
   .dark {
@@ -76,16 +79,16 @@
     --popover: 220 14% 12%;
     --popover-foreground: 210 20% 98%;
 
-    --primary: 217 91% 60%;
-    --primary-foreground: 220 14% 10%;
+    --primary: 24 95% 53%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 222 80% 40%;
+    --secondary: 199 89% 48%;
     --secondary-foreground: 0 0% 100%;
 
     --muted: 220 14% 18%;
     --muted-foreground: 215 20% 65%;
 
-    --accent: 0 84% 60%;
+    --accent: 271 81% 56%;
     --accent-foreground: 0 0% 100%;
 
     --ecocash: 153 100% 33%;
@@ -99,7 +102,7 @@
 
     --border: 220 14% 20%;
     --input: 220 14% 20%;
-    --ring: 217 91% 60%;
+    --ring: 24 95% 53%;
   }
 }
 
