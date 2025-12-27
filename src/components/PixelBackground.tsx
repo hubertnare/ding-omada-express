@@ -28,7 +28,7 @@ const PixelBackground = ({ className }: PixelBackgroundProps) => {
       const { width, height } = canvas;
       ctx.clearRect(0, 0, width, height);
 
-      const pixelSize = 4;
+      const pixelSize = 6;
       const cols = Math.ceil(width / pixelSize);
       const rows = Math.ceil(height / pixelSize);
 
@@ -37,19 +37,19 @@ const PixelBackground = ({ className }: PixelBackgroundProps) => {
       
       for (let i = 0; i < cols; i++) {
         for (let j = 0; j < rows; j++) {
-          // Create a noise pattern with animation
-          const noise = Math.sin(i * 0.1 + time * 0.5) * Math.cos(j * 0.1 + time * 0.3);
-          const threshold = 0.92 + Math.sin(time * 0.2) * 0.02;
+          // Create a sparse, subtle noise pattern
+          const noise = Math.sin(i * 0.05 + time * 0.1) * Math.cos(j * 0.05 + time * 0.08);
+          const threshold = 0.97;
           
           if (Math.abs(noise) > threshold) {
             const x = i * pixelSize;
             const y = j * pixelSize;
             
-            // Gradient from purple to orange matching theme
-            const hue = 271 + (i / cols) * 60 + Math.sin(time + i * 0.05) * 20;
-            const saturation = 70 + Math.sin(time * 0.5 + j * 0.02) * 10;
-            const lightness = isDark ? 50 : 60;
-            const alpha = 0.15 + Math.abs(noise - threshold) * 0.3;
+            // Subtle purple-pink tones
+            const hue = 280 + Math.sin(time * 0.1 + i * 0.02) * 30;
+            const saturation = 40;
+            const lightness = isDark ? 40 : 70;
+            const alpha = 0.08;
             
             ctx.fillStyle = `hsla(${hue}, ${saturation}%, ${lightness}%, ${alpha})`;
             ctx.fillRect(x, y, pixelSize - 1, pixelSize - 1);
@@ -57,7 +57,7 @@ const PixelBackground = ({ className }: PixelBackgroundProps) => {
         }
       }
 
-      time += 0.02;
+      time += 0.005;
       animationId = requestAnimationFrame(draw);
     };
 
@@ -76,7 +76,7 @@ const PixelBackground = ({ className }: PixelBackgroundProps) => {
     <canvas
       ref={canvasRef}
       className={`fixed inset-0 pointer-events-none z-0 ${className}`}
-      style={{ opacity: 0.5 }}
+      style={{ opacity: 0.3 }}
     />
   );
 };
