@@ -2,95 +2,104 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
-*/
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    /* DING Brand Colors */
+    --background: 210 20% 99%;
+    --foreground: 220 14% 16%;
 
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card-foreground: 220 14% 16%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover-foreground: 220 14% 16%;
 
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
+    /* DING Blue */
+    --primary: 222 80% 40%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    /* Lighter Blue */
+    --secondary: 217 91% 60%;
+    --secondary-foreground: 0 0% 100%;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    /* Muted grays */
+    --muted: 210 40% 96%;
+    --muted-foreground: 220 9% 46%;
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    /* DING Red accent */
+    --accent: 0 84% 60%;
+    --accent-foreground: 0 0% 100%;
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    /* EcoCash Green */
+    --ecocash: 153 100% 33%;
+    --ecocash-foreground: 0 0% 100%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    /* Success Green */
+    --success: 160 84% 39%;
+    --success-foreground: 0 0% 100%;
 
-    --radius: 0.5rem;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 214 32% 91%;
+    --input: 214 32% 91%;
+    --ring: 222 80% 40%;
+
+    --radius: 0.75rem;
+
+    /* Shadows */
+    --shadow-sm: 0 1px 2px 0 hsl(220 14% 16% / 0.05);
+    --shadow-md: 0 4px 6px -1px hsl(220 14% 16% / 0.1), 0 2px 4px -2px hsl(220 14% 16% / 0.1);
+    --shadow-lg: 0 10px 15px -3px hsl(220 14% 16% / 0.1), 0 4px 6px -4px hsl(220 14% 16% / 0.1);
+    --shadow-card: 0 2px 8px -2px hsl(222 80% 40% / 0.12);
+    --shadow-card-hover: 0 8px 20px -4px hsl(222 80% 40% / 0.2);
 
     --sidebar-background: 0 0% 98%;
-
     --sidebar-foreground: 240 5.3% 26.1%;
-
     --sidebar-primary: 240 5.9% 10%;
-
     --sidebar-primary-foreground: 0 0% 98%;
-
     --sidebar-accent: 240 4.8% 95.9%;
-
     --sidebar-accent-foreground: 240 5.9% 10%;
-
     --sidebar-border: 220 13% 91%;
-
     --sidebar-ring: 217.2 91.2% 59.8%;
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
+    --background: 220 14% 10%;
+    --foreground: 210 20% 98%;
 
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
+    --card: 220 14% 12%;
+    --card-foreground: 210 20% 98%;
 
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 220 14% 12%;
+    --popover-foreground: 210 20% 98%;
 
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
+    --primary: 217 91% 60%;
+    --primary-foreground: 220 14% 10%;
 
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
+    --secondary: 222 80% 40%;
+    --secondary-foreground: 0 0% 100%;
 
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
+    --muted: 220 14% 18%;
+    --muted-foreground: 215 20% 65%;
 
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
+    --accent: 0 84% 60%;
+    --accent-foreground: 0 0% 100%;
 
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
+    --ecocash: 153 100% 33%;
+    --ecocash-foreground: 0 0% 100%;
 
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --success: 160 84% 39%;
+    --success-foreground: 0 0% 100%;
+
+    --destructive: 0 62% 30%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 220 14% 20%;
+    --input: 220 14% 20%;
+    --ring: 217 91% 60%;
   }
 }
 
@@ -100,6 +109,118 @@ All colors MUST be HSL.
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground font-sans antialiased;
+  }
+
+  html {
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  }
+}
+
+@layer components {
+  .voucher-card {
+    @apply relative bg-card rounded-xl border-2 border-transparent p-6 cursor-pointer transition-all duration-200;
+    box-shadow: var(--shadow-card);
+  }
+
+  .voucher-card:hover {
+    @apply border-primary/30;
+    box-shadow: var(--shadow-card-hover);
+    transform: translateY(-2px);
+  }
+
+  .voucher-card.selected {
+    @apply border-primary bg-primary/5;
+    box-shadow: var(--shadow-card-hover);
+  }
+
+  .voucher-card.popular::before {
+    content: 'Popular';
+    @apply absolute -top-3 left-1/2 -translate-x-1/2 bg-accent text-accent-foreground text-xs font-semibold px-3 py-1 rounded-full;
+  }
+
+  .ecocash-btn {
+    @apply w-full py-4 px-6 rounded-xl font-semibold text-lg transition-all duration-200 flex items-center justify-center gap-3;
+    background-color: hsl(var(--ecocash));
+    color: hsl(var(--ecocash-foreground));
+    box-shadow: 0 4px 14px -3px hsl(153 100% 33% / 0.4);
+  }
+
+  .ecocash-btn:hover:not(:disabled) {
+    background-color: hsl(153 100% 28%);
+    transform: scale(1.02);
+    box-shadow: 0 6px 20px -3px hsl(153 100% 33% / 0.5);
+  }
+
+  .ecocash-btn:active:not(:disabled) {
+    transform: scale(0.98);
+  }
+
+  .ecocash-btn:disabled {
+    @apply opacity-50 cursor-not-allowed;
+    transform: none;
+  }
+
+  .phone-input-wrapper {
+    @apply flex items-center bg-card border-2 border-input rounded-xl overflow-hidden transition-all duration-200 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20;
+  }
+
+  .phone-prefix {
+    @apply flex items-center gap-2 px-4 py-4 bg-muted/50 text-muted-foreground font-medium border-r border-input;
+  }
+
+  .success-checkmark {
+    animation: checkmark-draw 0.6s ease-out forwards;
+  }
+
+  @keyframes checkmark-draw {
+    0% {
+      stroke-dashoffset: 100;
+    }
+    100% {
+      stroke-dashoffset: 0;
+    }
+  }
+
+  @keyframes fade-up {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes scale-in {
+    from {
+      opacity: 0;
+      transform: scale(0.9);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  .animate-fade-up {
+    animation: fade-up 0.5s ease-out forwards;
+  }
+
+  .animate-scale-in {
+    animation: scale-in 0.4s ease-out forwards;
+  }
+
+  .animate-delay-100 {
+    animation-delay: 100ms;
+  }
+
+  .animate-delay-200 {
+    animation-delay: 200ms;
+  }
+
+  .animate-delay-300 {
+    animation-delay: 300ms;
   }
 }
