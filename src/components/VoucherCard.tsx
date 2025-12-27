@@ -1,15 +1,15 @@
 import { cn } from "@/lib/utils";
-import { Check } from "lucide-react";
+import { Check, Wifi } from "lucide-react";
 
 interface VoucherCardProps {
-  value: number;
-  currency: string;
+  gigs: number;
+  price: number;
   popular?: boolean;
   selected?: boolean;
   onClick: () => void;
 }
 
-const VoucherCard = ({ value, currency, popular, selected, onClick }: VoucherCardProps) => {
+const VoucherCard = ({ gigs, price, popular, selected, onClick }: VoucherCardProps) => {
   return (
     <button
       onClick={onClick}
@@ -20,20 +20,33 @@ const VoucherCard = ({ value, currency, popular, selected, onClick }: VoucherCar
       )}
     >
       <div className="flex items-center justify-between">
-        <div>
-          <p className="text-3xl font-bold text-foreground">
-            ${value}
-          </p>
-          <p className="text-sm text-muted-foreground mt-1">
-            {currency} Voucher
-          </p>
+        <div className="flex items-center gap-3">
+          <div className={cn(
+            "w-12 h-12 rounded-xl flex items-center justify-center",
+            selected ? "bg-primary" : "bg-gradient-to-br from-accent via-pink-500 to-primary"
+          )}>
+            <Wifi className="w-6 h-6 text-white" />
+          </div>
+          <div>
+            <p className="text-2xl font-bold text-foreground">
+              {gigs} GB
+            </p>
+            <p className="text-sm text-muted-foreground">
+              WiFi Data
+            </p>
+          </div>
         </div>
         
-        {selected && (
-          <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center animate-scale-in">
-            <Check className="w-5 h-5 text-primary-foreground" />
-          </div>
-        )}
+        <div className="text-right">
+          <p className="text-lg font-semibold text-primary">
+            ${price}
+          </p>
+          {selected && (
+            <div className="w-6 h-6 bg-primary rounded-full flex items-center justify-center animate-scale-in mt-1 ml-auto">
+              <Check className="w-4 h-4 text-primary-foreground" />
+            </div>
+          )}
+        </div>
       </div>
     </button>
   );
