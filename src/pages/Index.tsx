@@ -7,7 +7,8 @@ import EcoCashButton from "@/components/EcoCashButton";
 import SuccessScreen from "@/components/SuccessScreen";
 import Stepper from "@/components/Stepper";
 import PixelBackground from "@/components/PixelBackground";
-import { Wifi, ArrowRight, ArrowLeft } from "lucide-react";
+import ConnectionModeSelector, { ConnectionMode } from "@/components/ConnectionModeSelector";
+import { Wifi, ArrowRight, ArrowLeft, Smartphone, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const wifiPackages = [
@@ -18,9 +19,14 @@ const wifiPackages = [
   { gigs: 20, price: 40, duration: "30 Days" },
 ];
 
-const steps = [
+const voucherSteps = [
   { label: "Select Package", description: "Choose WiFi data" },
   { label: "Enter Number", description: "Your mobile" },
+  { label: "Payment", description: "Pay with EcoCash" },
+];
+
+const deviceSteps = [
+  { label: "Select Package", description: "Choose WiFi data" },
   { label: "Payment", description: "Pay with EcoCash" },
 ];
 
@@ -40,6 +46,7 @@ const generateVoucherCode = (): string => {
 };
 
 const Index = () => {
+  const [connectionMode, setConnectionMode] = useState<ConnectionMode>("device");
   const [currentStep, setCurrentStep] = useState(0);
   const [selectedPackage, setSelectedPackage] = useState<{ gigs: number; price: number } | null>(null);
   const [phoneNumber, setPhoneNumber] = useState("");
@@ -48,20 +55,39 @@ const Index = () => {
   const [purchaseComplete, setPurchaseComplete] = useState(false);
   const [voucherCode, setVoucherCode] = useState("");
 
+  const steps = connectionMode === "voucher" ? voucherSteps : deviceSteps;
+  const maxStep = steps.length - 1;
+
   const handlePhoneChange = useCallback((value: string) => {
     setPhoneNumber(value);
     setPhoneError("");
   }, []);
 
+  const handleModeChange = (mode: ConnectionMode) => {
+    setConnectionMode(mode);
+    setCurrentStep(0);
+    setSelectedPackage(null);
+    setPhoneNumber("");
+    setPhoneError("");
+  };
+
   const handleNext = () => {
-    if (currentStep === 0 && selectedPackage) {
-      setCurrentStep(1);
-    } else if (currentStep === 1) {
-      if (!validateZWPhone(phoneNumber)) {
-        setPhoneError("Please enter a valid Zimbabwean mobile number");
-        return;
+    if (connectionMode === "device") {
+      // Device mode: Package -> Payment
+      if (currentStep === 0 && selectedPackage) {
+        setCurrentStep(1);
       }
-      setCurrentStep(2);
+    } else {
+      // Voucher mode: Package -> Phone -> Payment
+      if (currentStep === 0 && selectedPackage) {
+        setCurrentStep(1);
+      } else if (currentStep === 1) {
+        if (!validateZWPhone(phoneNumber)) {
+          setPhoneError("Please enter a valid Zimbabwean mobile number");
+          return;
+        }
+        setCurrentStep(2);
+      }
     }
   };
 
@@ -77,8 +103,11 @@ const Index = () => {
     setIsProcessing(true);
     await new Promise(resolve => setTimeout(resolve, 2000));
 
-    const code = generateVoucherCode();
-    setVoucherCode(code);
+    if (connectionMode === "voucher") {
+      const code = generateVoucherCode();
+      setVoucherCode(code);
+    }
+    
     setPurchaseComplete(true);
     setIsProcessing(false);
   };
@@ -92,7 +121,62 @@ const Index = () => {
     setVoucherCode("");
   };
 
-  if (purchaseComplete) {
+  // Device connection success screen
+  if (purchaseComplete && connectionMode === "device") {
+    return (
+      <div className="min-h-screen flex flex-col bg-background relative">
+        <PixelBackground />
+        <div className="relative z-10 flex flex-col min-h-screen">
+          <Header />
+          <main className="flex-1 container py-8 flex items-center justify-center">
+            <div className="max-w-md w-full text-center space-y-6 animate-fade-up">
+              <div className="inline-flex items-center justify-center w-20 h-20 bg-success/10 rounded-full">
+                <CheckCircle2 className="w-12 h-12 text-success" />
+              </div>
+              
+              <div className="space-y-2">
+                <h2 className="text-2xl font-bold text-foreground">You're Connected!</h2>
+                <p className="text-muted-foreground">
+                  This device now has WiFi access
+                </p>
+              </div>
+
+              <div className="bg-card border border-border rounded-xl p-6 space-y-4">
+                <div className="flex items-center justify-center gap-3">
+                  <Smartphone className="w-6 h-6 text-primary" />
+                  <span className="font-medium">Device Authorized</span>
+                </div>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">Data Package</span>
+                  <span className="font-semibold">{selectedPackage?.gigs} GB</span>
+                </div>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">Amount Paid</span>
+                  <span className="font-semibold text-primary">${selectedPackage?.price}</span>
+                </div>
+              </div>
+
+              <p className="text-sm text-muted-foreground">
+                Your device is now connected to the network. Enjoy browsing!
+              </p>
+
+              <Button
+                variant="outline"
+                onClick={handleBuyAnother}
+                className="w-full"
+              >
+                Buy More Data
+              </Button>
+            </div>
+          </main>
+          <Footer />
+        </div>
+      </div>
+    );
+  }
+
+  // Voucher success screen
+  if (purchaseComplete && connectionMode === "voucher") {
     return (
       <div className="min-h-screen flex flex-col bg-background relative">
         <PixelBackground />
@@ -110,6 +194,10 @@ const Index = () => {
     );
   }
 
+  // Check if we're on the payment step
+  const isPaymentStep = connectionMode === "device" ? currentStep === 1 : currentStep === 2;
+  const isPhoneStep = connectionMode === "voucher" && currentStep === 1;
+
   return (
     <div className="min-h-screen flex flex-col bg-background relative">
       <PixelBackground />
@@ -126,8 +214,13 @@ const Index = () => {
             WiFi Data Packages
           </h2>
           <p className="text-lg text-muted-foreground max-w-md mx-auto">
-            Buy WiFi data, receive via SMS instantly. Connect anywhere.
+            Buy WiFi data, connect instantly or receive a code via SMS.
           </p>
+        </section>
+
+        {/* Connection Mode Selector */}
+        <section className="animate-fade-up">
+          <ConnectionModeSelector mode={connectionMode} onChange={handleModeChange} />
         </section>
 
         {/* Stepper */}
@@ -137,7 +230,7 @@ const Index = () => {
 
         {/* Step Content */}
         <section className="animate-fade-up animate-delay-100">
-          {/* Step 1: Select Package */}
+          {/* Step 1: Select Package (both modes) */}
           {currentStep === 0 && (
             <div className="space-y-6">
               <h3 className="text-lg font-semibold text-foreground text-center">
@@ -159,8 +252,8 @@ const Index = () => {
             </div>
           )}
 
-          {/* Step 2: Enter Phone */}
-          {currentStep === 1 && (
+          {/* Step 2 (Voucher mode only): Enter Phone */}
+          {isPhoneStep && (
             <div className="max-w-md mx-auto space-y-6">
               <h3 className="text-lg font-semibold text-foreground text-center">
                 Enter Your Mobile Number
@@ -176,8 +269,8 @@ const Index = () => {
             </div>
           )}
 
-          {/* Step 3: Payment */}
-          {currentStep === 2 && (
+          {/* Payment Step (both modes) */}
+          {isPaymentStep && (
             <div className="max-w-md mx-auto space-y-6">
               <h3 className="text-lg font-semibold text-foreground text-center">
                 Confirm & Pay
@@ -186,13 +279,27 @@ const Index = () => {
               {/* Order Summary */}
               <div className="bg-card border border-border rounded-xl p-6 space-y-4">
                 <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">Connection Type</span>
+                  <span className="font-semibold">
+                    {connectionMode === "device" ? "This Device" : "Voucher Code"}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
                   <span className="text-muted-foreground">Package</span>
                   <span className="font-semibold">{selectedPackage?.gigs} GB WiFi</span>
                 </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">Phone</span>
-                  <span className="font-semibold">+263 {phoneNumber}</span>
-                </div>
+                {connectionMode === "voucher" && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-muted-foreground">Send to</span>
+                    <span className="font-semibold">+263 {phoneNumber}</span>
+                  </div>
+                )}
+                {connectionMode === "device" && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-muted-foreground">Device</span>
+                    <span className="font-semibold text-sm">Current Device</span>
+                  </div>
+                )}
                 <div className="border-t border-border pt-4 flex items-center justify-between">
                   <span className="text-lg font-semibold">Total</span>
                   <span className="text-2xl font-bold text-primary">${selectedPackage?.price}</span>
@@ -221,7 +328,7 @@ const Index = () => {
               Back
             </Button>
           )}
-          {currentStep < 2 && (
+          {currentStep < maxStep && (
             <Button
               onClick={handleNext}
               disabled={currentStep === 0 && !selectedPackage}
