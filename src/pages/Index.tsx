@@ -11,11 +11,11 @@ import { Wifi, ArrowRight, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const wifiPackages = [
-  { gigs: 1, price: 5 },
-  { gigs: 3, price: 10, popular: true },
-  { gigs: 5, price: 15 },
-  { gigs: 10, price: 25 },
-  { gigs: 20, price: 40 },
+  { gigs: 1, price: 5, duration: "1 Day" },
+  { gigs: 3, price: 10, duration: "7 Days", popular: true },
+  { gigs: 5, price: 15, duration: "14 Days" },
+  { gigs: 10, price: 25, duration: "30 Days" },
+  { gigs: 20, price: 40, duration: "30 Days" },
 ];
 
 const steps = [
@@ -94,23 +94,26 @@ const Index = () => {
 
   if (purchaseComplete) {
     return (
-      <div className="min-h-screen flex flex-col bg-background">
+      <div className="min-h-screen flex flex-col bg-background relative">
         <PixelBackground />
-        <Header />
-        <SuccessScreen
-          voucherCode={voucherCode}
-          phoneNumber={phoneNumber}
-          amount={selectedPackage!.price}
-          onBuyAnother={handleBuyAnother}
-        />
-        <Footer />
+        <div className="relative z-10 flex flex-col min-h-screen">
+          <Header />
+          <SuccessScreen
+            voucherCode={voucherCode}
+            phoneNumber={phoneNumber}
+            amount={selectedPackage!.price}
+            onBuyAnother={handleBuyAnother}
+          />
+          <Footer />
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-background">
+    <div className="min-h-screen flex flex-col bg-background relative">
       <PixelBackground />
+      <div className="relative z-10 flex flex-col min-h-screen">
       <Header />
 
       <main className="flex-1 container py-8 space-y-8">
@@ -146,6 +149,7 @@ const Index = () => {
                     key={pkg.gigs}
                     gigs={pkg.gigs}
                     price={pkg.price}
+                    duration={pkg.duration}
                     popular={pkg.popular}
                     selected={selectedPackage?.gigs === pkg.gigs}
                     onClick={() => setSelectedPackage(pkg)}
@@ -231,6 +235,7 @@ const Index = () => {
       </main>
 
       <Footer />
+      </div>
     </div>
   );
 };
