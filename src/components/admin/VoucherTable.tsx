@@ -23,17 +23,28 @@ import { cn } from '@/lib/utils';
 export interface VoucherRow {
   id: string;
   voucher_code: string;
+  original_code: string;
   price_display: string;
   price_value: number;
+  price_currency: string;
   description: string | null;
   speed_display: string | null;
+  download_speed: number | null;
+  upload_speed: number | null;
+  duration_hours: number | null;
   duration_days: number | null;
+  duration_display: string | null;
+  validity_type: 'Permanent' | 'Temporary' | null;
   location: string | null;
-  status: 'active' | 'sold' | 'expired' | 'reserved';
-  is_sold: boolean;
+  status: 'active' | 'sold' | 'expired' | 'reserved' | null;
+  is_sold: boolean | null;
   sold_to: string | null;
   sold_at: string | null;
-  created_at: string;
+  ecocash_ref: string | null;
+  sms_delivered: boolean | null;
+  created_at: string | null;
+  updated_at: string | null;
+  uploaded_batch: string | null;
 }
 
 interface VoucherTableProps {
@@ -155,6 +166,7 @@ export function VoucherTable({
               <TableHead className="hidden md:table-cell">Description</TableHead>
               <TableHead className="hidden lg:table-cell">Speed</TableHead>
               <TableHead className="hidden lg:table-cell">Duration</TableHead>
+              <TableHead className="hidden xl:table-cell">Validity</TableHead>
               <TableHead className="hidden md:table-cell">Location</TableHead>
               <TableHead>Status</TableHead>
               <TableHead className="w-12"></TableHead>
@@ -163,85 +175,104 @@ export function VoucherTable({
           <TableBody>
             {isLoading ? (
               <TableRow>
-                <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
+                <TableCell colSpan={10} className="text-center py-8 text-muted-foreground">
                   Loading vouchers...
                 </TableCell>
               </TableRow>
             ) : filteredVouchers.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
+                <TableCell colSpan={10} className="text-center py-8 text-muted-foreground">
                   No vouchers found
                 </TableCell>
               </TableRow>
             ) : (
-              filteredVouchers.map((voucher) => (
-                <TableRow key={voucher.id} className="group">
-                  <TableCell>
-                    <Checkbox
-                      checked={selectedIds.has(voucher.id)}
-                      onCheckedChange={() => toggleSelect(voucher.id)}
-                    />
-                  </TableCell>
-                  <TableCell className="font-mono text-sm font-medium">
-                    {voucher.voucher_code}
-                  </TableCell>
-                  <TableCell className="font-semibold text-admin-blue">
-                    {voucher.price_display}
-                  </TableCell>
-                  <TableCell className="hidden md:table-cell max-w-[200px] truncate text-muted-foreground">
-                    {voucher.description || '-'}
-                  </TableCell>
-                  <TableCell className="hidden lg:table-cell text-muted-foreground">
-                    {voucher.speed_display || '-'}
-                  </TableCell>
-                  <TableCell className="hidden lg:table-cell text-muted-foreground">
-                    {voucher.duration_days ? `${voucher.duration_days} days` : '-'}
-                  </TableCell>
-                  <TableCell className="hidden md:table-cell">
-                    {voucher.location && (
-                      <span className="inline-flex items-center px-2 py-0.5 bg-muted rounded text-xs">
-                        {voucher.location}
+              filteredVouchers.map((voucher) => {
+                const status = voucher.status || 'active';
+                return (
+                  <TableRow key={voucher.id} className="group">
+                    <TableCell>
+                      <Checkbox
+                        checked={selectedIds.has(voucher.id)}
+                        onCheckedChange={() => toggleSelect(voucher.id)}
+                      />
+                    </TableCell>
+                    <TableCell className="font-mono text-sm font-medium">
+                      {voucher.voucher_code}
+                    </TableCell>
+                    <TableCell className="font-semibold text-admin-blue">
+                      {voucher.price_display}
+                    </TableCell>
+                    <TableCell className="hidden md:table-cell max-w-[200px] truncate text-muted-foreground">
+                      {voucher.description || '-'}
+                    </TableCell>
+                    <TableCell className="hidden lg:table-cell text-muted-foreground">
+                      {voucher.speed_display || (voucher.download_speed && voucher.upload_speed 
+                        ? `${voucher.download_speed}/${voucher.upload_speed} Mbps` 
+                        : '-')}
+                    </TableCell>
+                    <TableCell className="hidden lg:table-cell text-muted-foreground">
+                      {voucher.duration_display || (voucher.duration_hours 
+                        ? `${Math.floor(voucher.duration_hours / 24)} days`
+                        : '-')}
+                    </TableCell>
+                    <TableCell className="hidden xl:table-cell">
+                      {voucher.validity_type && (
+                        <span className={cn(
+                          'inline-flex items-center px-2 py-0.5 rounded text-xs',
+                          voucher.validity_type === 'Permanent' 
+                            ? 'bg-success/10 text-success' 
+                            : 'bg-warning/10 text-warning'
+                        )}>
+                          {voucher.validity_type}
+                        </span>
+                      )}
+                    </TableCell>
+                    <TableCell className="hidden md:table-cell">
+                      {voucher.location && (
+                        <span className="inline-flex items-center px-2 py-0.5 bg-muted rounded text-xs">
+                          {voucher.location}
+                        </span>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <span className={cn('admin-badge', statusConfig[status].className)}>
+                        {statusConfig[status].label}
                       </span>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    <span className={cn('admin-badge', statusConfig[voucher.status].className)}>
-                      {statusConfig[voucher.status].label}
-                    </span>
-                  </TableCell>
-                  <TableCell>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="opacity-0 group-hover:opacity-100 transition-opacity"
-                        >
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="bg-popover border-border">
-                        <DropdownMenuItem onClick={() => onViewDetails?.(voucher)}>
-                          <Eye className="h-4 w-4 mr-2" />
-                          View Details
-                        </DropdownMenuItem>
-                        {voucher.is_sold && (
-                          <DropdownMenuItem onClick={() => onResend?.(voucher)}>
-                            <Send className="h-4 w-4 mr-2" />
-                            Resend SMS
+                    </TableCell>
+                    <TableCell>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="opacity-0 group-hover:opacity-100 transition-opacity"
+                          >
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="bg-popover border-border">
+                          <DropdownMenuItem onClick={() => onViewDetails?.(voucher)}>
+                            <Eye className="h-4 w-4 mr-2" />
+                            View Details
                           </DropdownMenuItem>
-                        )}
-                        {voucher.status === 'active' && (
-                          <DropdownMenuItem onClick={() => onDeactivate?.(voucher)}>
-                            <Power className="h-4 w-4 mr-2" />
-                            Deactivate
-                          </DropdownMenuItem>
-                        )}
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
-                </TableRow>
-              ))
+                          {voucher.is_sold && (
+                            <DropdownMenuItem onClick={() => onResend?.(voucher)}>
+                              <Send className="h-4 w-4 mr-2" />
+                              Resend SMS
+                            </DropdownMenuItem>
+                          )}
+                          {status === 'active' && (
+                            <DropdownMenuItem onClick={() => onDeactivate?.(voucher)}>
+                              <Power className="h-4 w-4 mr-2" />
+                              Deactivate
+                            </DropdownMenuItem>
+                          )}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
+                  </TableRow>
+                );
+              })
             )}
           </TableBody>
         </Table>
