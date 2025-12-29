@@ -129,15 +129,16 @@ export default function AdminVouchers() {
   };
 
   const exportCSV = () => {
-    const headers = ['Code', 'Price', 'Description', 'Speed', 'Duration', 'Location', 'Status', 'Sold To', 'Sold At'];
+    const headers = ['Code', 'Price', 'Description', 'Speed', 'Duration', 'Validity', 'Location', 'Status', 'Sold To', 'Sold At'];
     const rows = vouchers.map((v) => [
       v.voucher_code,
       v.price_display,
       v.description || '',
-      v.speed_display || '',
-      v.duration_days ? `${v.duration_days} days` : '',
+      v.speed_display || (v.download_speed && v.upload_speed ? `${v.download_speed}/${v.upload_speed} Mbps` : ''),
+      v.duration_display || (v.duration_hours ? `${Math.floor(v.duration_hours / 24)} days` : ''),
+      v.validity_type || '',
       v.location || '',
-      v.status,
+      v.status || '',
       v.sold_to || '',
       v.sold_at || '',
     ]);
@@ -245,13 +246,25 @@ export default function AdminVouchers() {
                   </div>
                   <div>
                     <p className="text-muted-foreground">Speed</p>
-                    <p className="font-medium">{selectedVoucher.speed_display || '-'}</p>
+                    <p className="font-medium">
+                      {selectedVoucher.speed_display || 
+                        (selectedVoucher.download_speed && selectedVoucher.upload_speed 
+                          ? `${selectedVoucher.download_speed}/${selectedVoucher.upload_speed} Mbps` 
+                          : '-')}
+                    </p>
                   </div>
                   <div>
                     <p className="text-muted-foreground">Duration</p>
                     <p className="font-medium">
-                      {selectedVoucher.duration_days ? `${selectedVoucher.duration_days} days` : '-'}
+                      {selectedVoucher.duration_display || 
+                        (selectedVoucher.duration_hours 
+                          ? `${selectedVoucher.duration_hours} hours (${Math.floor(selectedVoucher.duration_hours / 24)} days)` 
+                          : '-')}
                     </p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground">Validity Type</p>
+                    <p className="font-medium">{selectedVoucher.validity_type || '-'}</p>
                   </div>
                   <div>
                     <p className="text-muted-foreground">Location</p>
@@ -260,8 +273,14 @@ export default function AdminVouchers() {
                   <div>
                     <p className="text-muted-foreground">Created</p>
                     <p className="font-medium">
-                      {new Date(selectedVoucher.created_at).toLocaleDateString()}
+                      {selectedVoucher.created_at 
+                        ? new Date(selectedVoucher.created_at).toLocaleDateString() 
+                        : '-'}
                     </p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground">Currency</p>
+                    <p className="font-medium">{selectedVoucher.price_currency}</p>
                   </div>
                 </div>
                 {selectedVoucher.description && (
@@ -285,6 +304,16 @@ export default function AdminVouchers() {
                             ? new Date(selectedVoucher.sold_at).toLocaleString()
                             : '-'}
                         </p>
+                      </div>
+                      {selectedVoucher.ecocash_ref && (
+                        <div>
+                          <p className="text-muted-foreground">EcoCash Ref</p>
+                          <p className="font-medium">{selectedVoucher.ecocash_ref}</p>
+                        </div>
+                      )}
+                      <div>
+                        <p className="text-muted-foreground">SMS Delivered</p>
+                        <p className="font-medium">{selectedVoucher.sms_delivered ? 'Yes' : 'No'}</p>
                       </div>
                     </div>
                   </div>
