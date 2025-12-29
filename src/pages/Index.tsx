@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import VoucherCard from "@/components/VoucherCard";
@@ -8,16 +8,17 @@ import SuccessScreen from "@/components/SuccessScreen";
 import Stepper from "@/components/Stepper";
 import PixelBackground from "@/components/PixelBackground";
 import ConnectionModeSelector, { ConnectionMode } from "@/components/ConnectionModeSelector";
-import { Wifi, ArrowRight, ArrowLeft, Smartphone, CheckCircle2 } from "lucide-react";
+import { Wifi, ArrowRight, ArrowLeft, Smartphone, CheckCircle2, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
-const wifiPackages = [
-  { gigs: 1, price: 5, duration: "1 Day" },
-  { gigs: 3, price: 10, duration: "7 Days", popular: true },
-  { gigs: 5, price: 15, duration: "14 Days" },
-  { gigs: 10, price: 25, duration: "30 Days" },
-  { gigs: 20, price: 40, duration: "30 Days" },
-];
+interface VoucherPackage {
+  price_value: number;
+  price_display: string;
+  duration_display: string | null;
+  count: number;
+}
 
 const voucherSteps = [
   { label: "Select Package", description: "Choose WiFi data" },
@@ -37,26 +38,67 @@ const validateZWPhone = (phone: string): boolean => {
   return digits.length === 9 && validPrefixes.some(prefix => digits.startsWith(prefix));
 };
 
-// Generate a mock voucher code
-const generateVoucherCode = (): string => {
-  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-  const part1 = Array.from({ length: 4 }, () => chars[Math.floor(Math.random() * chars.length)]).join("");
-  const part2 = Array.from({ length: 4 }, () => chars[Math.floor(Math.random() * chars.length)]).join("");
-  return `WIFI-${part1}-${part2}`;
-};
-
 const Index = () => {
   const [connectionMode, setConnectionMode] = useState<ConnectionMode>("device");
   const [currentStep, setCurrentStep] = useState(0);
-  const [selectedPackage, setSelectedPackage] = useState<{ gigs: number; price: number } | null>(null);
+  const [selectedPackage, setSelectedPackage] = useState<VoucherPackage | null>(null);
   const [phoneNumber, setPhoneNumber] = useState("");
   const [phoneError, setPhoneError] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
   const [purchaseComplete, setPurchaseComplete] = useState(false);
   const [voucherCode, setVoucherCode] = useState("");
+  const [packages, setPackages] = useState<VoucherPackage[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   const steps = connectionMode === "voucher" ? voucherSteps : deviceSteps;
   const maxStep = steps.length - 1;
+
+  // Fetch available voucher packages from database
+  useEffect(() => {
+    const fetchPackages = async () => {
+      setIsLoading(true);
+      try {
+        // Get available vouchers grouped by price
+        const { data, error } = await supabase
+          .from('vouchers')
+          .select('price_value, price_display, duration_display')
+          .eq('status', 'active')
+          .eq('is_sold', false);
+
+        if (error) {
+          console.error('Error fetching vouchers:', error);
+          toast.error('Failed to load packages');
+          return;
+        }
+
+        // Group by price and count available
+        const grouped = (data || []).reduce((acc, voucher) => {
+          const key = voucher.price_value;
+          if (!acc[key]) {
+            acc[key] = {
+              price_value: voucher.price_value,
+              price_display: voucher.price_display,
+              duration_display: voucher.duration_display,
+              count: 0
+            };
+          }
+          acc[key].count++;
+          return acc;
+        }, {} as Record<number, VoucherPackage>);
+
+        // Sort by price
+        const sortedPackages = Object.values(grouped).sort((a, b) => a.price_value - b.price_value);
+        setPackages(sortedPackages);
+      } catch (err) {
+        console.error('Error:', err);
+        toast.error('Failed to load packages');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchPackages();
+  }, [purchaseComplete]); // Refetch when purchase completes
 
   const handlePhoneChange = useCallback((value: string) => {
     setPhoneNumber(value);
@@ -73,12 +115,10 @@ const Index = () => {
 
   const handleNext = () => {
     if (connectionMode === "device") {
-      // Device mode: Package -> Payment
       if (currentStep === 0 && selectedPackage) {
         setCurrentStep(1);
       }
     } else {
-      // Voucher mode: Package -> Phone -> Payment
       if (currentStep === 0 && selectedPackage) {
         setCurrentStep(1);
       } else if (currentStep === 1) {
@@ -101,15 +141,62 @@ const Index = () => {
     if (!selectedPackage) return;
 
     setIsProcessing(true);
-    await new Promise(resolve => setTimeout(resolve, 2000));
-
-    if (connectionMode === "voucher") {
-      const code = generateVoucherCode();
-      setVoucherCode(code);
-    }
     
-    setPurchaseComplete(true);
-    setIsProcessing(false);
+    try {
+      // Find an available voucher with this price
+      const { data: availableVoucher, error: fetchError } = await supabase
+        .from('vouchers')
+        .select('*')
+        .eq('price_value', selectedPackage.price_value)
+        .eq('status', 'active')
+        .eq('is_sold', false)
+        .limit(1)
+        .single();
+
+      if (fetchError || !availableVoucher) {
+        toast.error('No vouchers available for this package');
+        setIsProcessing(false);
+        return;
+      }
+
+      // Format phone number for storage
+      const formattedPhone = phoneNumber ? `+263${phoneNumber.replace(/\s/g, '')}` : null;
+
+      // Generate EcoCash reference (mock for now)
+      const ecocashRef = `ECO-${Date.now().toString(36).toUpperCase()}`;
+
+      // Update voucher as sold
+      const { error: updateError } = await supabase
+        .from('vouchers')
+        .update({
+          is_sold: true,
+          status: 'sold' as const,
+          sold_to: formattedPhone,
+          sold_at: new Date().toISOString(),
+          ecocash_ref: ecocashRef,
+          sms_delivered: connectionMode === "voucher" // Mark as delivered if voucher mode
+        })
+        .eq('id', availableVoucher.id);
+
+      if (updateError) {
+        console.error('Error updating voucher:', updateError);
+        toast.error('Failed to complete purchase');
+        setIsProcessing(false);
+        return;
+      }
+
+      if (connectionMode === "voucher") {
+        setVoucherCode(availableVoucher.voucher_code);
+      }
+      
+      toast.success('Purchase successful!');
+      setPurchaseComplete(true);
+    } catch (err) {
+      console.error('Payment error:', err);
+      toast.error('An error occurred during payment');
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   const handleBuyAnother = () => {
@@ -147,12 +234,12 @@ const Index = () => {
                   <span className="font-medium">Device Authorized</span>
                 </div>
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Data Package</span>
-                  <span className="font-semibold">{selectedPackage?.gigs} GB</span>
+                  <span className="text-muted-foreground">Package</span>
+                  <span className="font-semibold">{selectedPackage?.price_display}</span>
                 </div>
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground">Amount Paid</span>
-                  <span className="font-semibold text-primary">${selectedPackage?.price}</span>
+                  <span className="font-semibold text-primary">${selectedPackage?.price_value}</span>
                 </div>
               </div>
 
@@ -185,7 +272,7 @@ const Index = () => {
           <SuccessScreen
             voucherCode={voucherCode}
             phoneNumber={phoneNumber}
-            amount={selectedPackage!.price}
+            amount={selectedPackage!.price_value}
             onBuyAnother={handleBuyAnother}
           />
           <Footer />
@@ -236,19 +323,31 @@ const Index = () => {
               <h3 className="text-lg font-semibold text-foreground text-center">
                 Choose Your Data Package
               </h3>
-              <div className="flex flex-col gap-3 max-w-md mx-auto">
-                {wifiPackages.map((pkg) => (
-                  <VoucherCard
-                    key={pkg.gigs}
-                    gigs={pkg.gigs}
-                    price={pkg.price}
-                    duration={pkg.duration}
-                    popular={pkg.popular}
-                    selected={selectedPackage?.gigs === pkg.gigs}
-                    onClick={() => setSelectedPackage(pkg)}
-                  />
-                ))}
-              </div>
+              
+              {isLoading ? (
+                <div className="flex items-center justify-center py-12">
+                  <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                </div>
+              ) : packages.length === 0 ? (
+                <div className="text-center py-12">
+                  <p className="text-muted-foreground">No packages available at the moment.</p>
+                  <p className="text-sm text-muted-foreground mt-2">Please check back later.</p>
+                </div>
+              ) : (
+                <div className="flex flex-col gap-3 max-w-md mx-auto">
+                  {packages.map((pkg) => (
+                    <VoucherCard
+                      key={pkg.price_value}
+                      gigs={pkg.price_value} // Using price as identifier
+                      price={pkg.price_value}
+                      duration={pkg.duration_display || 'Data Package'}
+                      popular={pkg.count > 5}
+                      selected={selectedPackage?.price_value === pkg.price_value}
+                      onClick={() => setSelectedPackage(pkg)}
+                    />
+                  ))}
+                </div>
+              )}
             </div>
           )}
 
@@ -286,7 +385,7 @@ const Index = () => {
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-muted-foreground">Package</span>
-                  <span className="font-semibold">{selectedPackage?.gigs} GB WiFi</span>
+                  <span className="font-semibold">{selectedPackage?.price_display || `$${selectedPackage?.price_value}`}</span>
                 </div>
                 {connectionMode === "voucher" && (
                   <div className="flex items-center justify-between">
@@ -302,12 +401,12 @@ const Index = () => {
                 )}
                 <div className="border-t border-border pt-4 flex items-center justify-between">
                   <span className="text-lg font-semibold">Total</span>
-                  <span className="text-2xl font-bold text-primary">${selectedPackage?.price}</span>
+                  <span className="text-2xl font-bold text-primary">${selectedPackage?.price_value}</span>
                 </div>
               </div>
 
               <EcoCashButton
-                amount={selectedPackage?.price || 0}
+                amount={selectedPackage?.price_value || 0}
                 disabled={!selectedPackage}
                 loading={isProcessing}
                 onClick={handlePayment}
@@ -331,7 +430,7 @@ const Index = () => {
           {currentStep < maxStep && (
             <Button
               onClick={handleNext}
-              disabled={currentStep === 0 && !selectedPackage}
+              disabled={(currentStep === 0 && !selectedPackage) || isLoading}
               className="px-6 bg-primary hover:bg-primary/90"
             >
               Next
