@@ -61,6 +61,15 @@ export default {
           DEFAULT: "hsl(var(--success))",
           foreground: "hsl(var(--success-foreground))",
         },
+        warning: {
+          DEFAULT: "hsl(var(--warning))",
+          foreground: "hsl(var(--warning-foreground))",
+        },
+        "admin-blue": {
+          DEFAULT: "hsl(var(--admin-blue))",
+          light: "hsl(var(--admin-blue-light))",
+          foreground: "hsl(var(--admin-blue-foreground))",
+        },
         sidebar: {
           DEFAULT: "hsl(var(--sidebar-background))",
           foreground: "hsl(var(--sidebar-foreground))",
