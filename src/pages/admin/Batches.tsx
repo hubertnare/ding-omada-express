@@ -34,12 +34,6 @@ interface Batch {
   locations: string[] | null;
   failures: Array<{ row: number; code: string; error: string }> | null;
 }
-  processed: number;
-  failed: number;
-  price_distribution: Record<string, number> | null;
-  locations: string[] | null;
-  failures: Array<{ row: number; code: string; error: string }> | null;
-}
 
 export default function AdminBatches() {
   const [batches, setBatches] = useState<Batch[]>([]);
@@ -60,7 +54,7 @@ export default function AdminBatches() {
 
       if (error) throw error;
 
-      setBatches((data as Batch[]) || []);
+      setBatches((data as unknown as Batch[]) || []);
     } catch (err: any) {
       console.error('Error fetching batches:', err);
       toast.error('Failed to load batch history');
