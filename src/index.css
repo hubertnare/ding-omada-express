@@ -20,9 +20,14 @@
     --primary: 24 95% 53%;
     --primary-foreground: 0 0% 100%;
 
-    /* DING Blue (navigation/links) */
+    /* DING Blue (admin navigation/links) */
     --secondary: 199 89% 48%;
     --secondary-foreground: 0 0% 100%;
+
+    /* Admin Blue - #1E40AF */
+    --admin-blue: 224 76% 40%;
+    --admin-blue-light: 217 91% 60%;
+    --admin-blue-foreground: 0 0% 100%;
 
     /* Muted grays */
     --muted: 210 40% 96%;
@@ -36,9 +41,13 @@
     --ecocash: 153 100% 33%;
     --ecocash-foreground: 0 0% 100%;
 
-    /* Success Green */
+    /* Success Green - #10B981 */
     --success: 160 84% 39%;
     --success-foreground: 0 0% 100%;
+
+    /* Warning Amber - #F59E0B */
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 100%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
@@ -59,14 +68,14 @@
     --shadow-card: 0 2px 8px -2px hsl(24 95% 53% / 0.12);
     --shadow-card-hover: 0 8px 20px -4px hsl(24 95% 53% / 0.2);
 
-    --sidebar-background: 0 0% 98%;
-    --sidebar-foreground: 240 5.3% 26.1%;
-    --sidebar-primary: 240 5.9% 10%;
-    --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 240 4.8% 95.9%;
-    --sidebar-accent-foreground: 240 5.9% 10%;
-    --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 24 95% 53%;
+    --sidebar-background: 224 76% 40%;
+    --sidebar-foreground: 0 0% 100%;
+    --sidebar-primary: 0 0% 100%;
+    --sidebar-primary-foreground: 224 76% 40%;
+    --sidebar-accent: 224 76% 48%;
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 224 76% 50%;
+    --sidebar-ring: 0 0% 100%;
   }
 
   .dark {
@@ -85,6 +94,10 @@
     --secondary: 199 89% 48%;
     --secondary-foreground: 0 0% 100%;
 
+    --admin-blue: 224 76% 40%;
+    --admin-blue-light: 217 91% 60%;
+    --admin-blue-foreground: 0 0% 100%;
+
     --muted: 220 14% 18%;
     --muted-foreground: 215 20% 65%;
 
@@ -97,12 +110,24 @@
     --success: 160 84% 39%;
     --success-foreground: 0 0% 100%;
 
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 100%;
+
     --destructive: 0 62% 30%;
     --destructive-foreground: 0 0% 100%;
 
     --border: 220 14% 20%;
     --input: 220 14% 20%;
     --ring: 24 95% 53%;
+
+    --sidebar-background: 220 14% 12%;
+    --sidebar-foreground: 210 20% 98%;
+    --sidebar-primary: 24 95% 53%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 220 14% 18%;
+    --sidebar-accent-foreground: 210 20% 98%;
+    --sidebar-border: 220 14% 20%;
+    --sidebar-ring: 24 95% 53%;
   }
 }
 
@@ -170,6 +195,51 @@
 
   .phone-prefix {
     @apply flex items-center gap-2 px-4 py-4 bg-muted/50 text-muted-foreground font-medium border-r border-input;
+  }
+
+  /* Admin Portal Styles */
+  .admin-card {
+    @apply bg-card rounded-lg border border-border p-6 transition-all duration-200 hover:shadow-md;
+  }
+
+  .admin-stat-card {
+    @apply bg-card rounded-lg border border-border p-4 transition-all duration-200;
+  }
+
+  .admin-table {
+    @apply w-full text-sm;
+  }
+
+  .admin-table th {
+    @apply text-left font-medium text-muted-foreground px-4 py-3 border-b border-border bg-muted/30;
+  }
+
+  .admin-table td {
+    @apply px-4 py-3 border-b border-border;
+  }
+
+  .admin-table tr:hover td {
+    @apply bg-muted/20;
+  }
+
+  .admin-badge {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+  }
+
+  .admin-badge-active {
+    @apply bg-success/10 text-success;
+  }
+
+  .admin-badge-sold {
+    @apply bg-admin-blue/10 text-admin-blue;
+  }
+
+  .admin-badge-expired {
+    @apply bg-destructive/10 text-destructive;
+  }
+
+  .admin-badge-reserved {
+    @apply bg-warning/10 text-warning;
   }
 
   .success-checkmark {
