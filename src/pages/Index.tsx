@@ -49,9 +49,26 @@ const Index = () => {
   const [voucherCode, setVoucherCode] = useState("");
   const [packages, setPackages] = useState<VoucherPackage[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [returnUrl, setReturnUrl] = useState<string | null>(null);
 
   const steps = connectionMode === "voucher" ? voucherSteps : deviceSteps;
   const maxStep = steps.length - 1;
+
+  // Check for returnUrl parameter from captive portal
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const returnUrlParam = urlParams.get('returnUrl');
+    const modeParam = urlParams.get('mode');
+    
+    if (returnUrlParam) {
+      setReturnUrl(decodeURIComponent(returnUrlParam));
+    }
+    
+    // If mode=voucher is specified, switch to voucher mode
+    if (modeParam === 'voucher') {
+      setConnectionMode('voucher');
+    }
+  }, []);
 
   // Fetch available voucher packages from database
   useEffect(() => {
@@ -262,8 +279,43 @@ const Index = () => {
     );
   }
 
-  // Voucher success screen
+  // Voucher success screen - redirect back to portal if returnUrl exists
   if (purchaseComplete && connectionMode === "voucher") {
+    // If we have a return URL, redirect back to the captive portal with the voucher code
+    if (returnUrl && voucherCode) {
+      const redirectUrl = new URL(returnUrl);
+      redirectUrl.searchParams.set('voucherCode', voucherCode);
+      redirectUrl.searchParams.set('purchaseSuccess', 'true');
+      
+      // Redirect after a short delay to show success
+      setTimeout(() => {
+        window.location.href = redirectUrl.toString();
+      }, 2000);
+      
+      return (
+        <div className="min-h-screen flex flex-col bg-background relative">
+          <PixelBackground />
+          <div className="relative z-10 flex flex-col min-h-screen">
+            <Header />
+            <main className="flex-1 container py-8 flex items-center justify-center">
+              <div className="max-w-md w-full text-center space-y-6 animate-fade-up">
+                <div className="inline-flex items-center justify-center w-20 h-20 bg-success/10 rounded-full">
+                  <CheckCircle2 className="w-12 h-12 text-success" />
+                </div>
+                <div className="space-y-2">
+                  <h2 className="text-2xl font-bold text-foreground">Purchase Successful!</h2>
+                  <p className="text-muted-foreground">Redirecting you back to connect...</p>
+                  <p className="text-sm text-primary font-mono mt-4">{voucherCode}</p>
+                </div>
+                <Loader2 className="w-6 h-6 animate-spin mx-auto text-primary" />
+              </div>
+            </main>
+            <Footer />
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div className="min-h-screen flex flex-col bg-background relative">
         <PixelBackground />
