@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#1E40AF">
+    <title>DING WiFi | Connect to the Internet</title>
+    <meta name="description" content="Connect to DING WiFi - Purchase vouchers instantly with EcoCash and get online in seconds.">
+    <link rel="stylesheet" href="index.css" type="text/css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body class="portal">
+    <!-- Background overlay -->
+    <div class="background-overlay"></div>
+    
+    <!-- Main container -->
+    <div class="portal-container">
+        <!-- Logo section -->
+        <div class="logo-section">
+            <img class="logo" src="portalLogo_picture@2x.png" alt="DING Technologies">
+            <h1 class="portal-title">DING WiFi</h1>
+            <p class="portal-subtitle">High-speed internet access</p>
+        </div>
+
+        <!-- Main content card -->
+        <div class="content-card">
+            <!-- Error/hint message -->
+            <span id="oper-hint" class="error-hint"></span>
+            
+            <!-- Hotspot selector (hidden by default) -->
+            <div id="hotspot-section" class="hotspot-section">
+                <label class="input-label">Select Access Type</label>
+                <select id="hotspot-selector" class="select-input"></select>
+            </div>
+
+            <!-- Login form -->
+            <form id="login-form">
+                <!-- Voucher input -->
+                <div id="input-voucher" class="input-group">
+                    <label class="input-label">Enter Your Voucher Code</label>
+                    <input id="voucherCode" class="text-input" name="voucherCode" type="text" placeholder="e.g., ABC123XYZ">
+                    <p class="input-hint">Enter the voucher code you received via SMS</p>
+                </div>
+
+                <!-- Username input -->
+                <div id="input-user" class="input-group">
+                    <label class="input-label">Username</label>
+                    <input id="username" class="text-input" name="username" type="text" placeholder="Enter your username">
+                </div>
+
+                <!-- Password input (for user auth) -->
+                <div id="input-password" class="input-group user-input">
+                    <label class="input-label">Password</label>
+                    <input id="password" class="text-input" name="password" type="password" placeholder="Enter your password">
+                </div>
+
+                <!-- Simple password -->
+                <div id="input-simple" class="input-group">
+                    <label class="input-label">Password</label>
+                    <input id="simplePassword" class="text-input password" name="simplePassword" type="password" placeholder="Enter password">
+                </div>
+
+                <!-- Phone number input -->
+                <div id="input-phone-num" class="input-group">
+                    <label class="input-label">Phone Number</label>
+                    <div class="phone-input-wrapper">
+                        <span class="country-prefix">+</span>
+                        <input id="country-code" class="country-code-input" type="text" value="263">
+                        <input id="phone-number" class="phone-input" name="phone-number" type="tel" placeholder="77 123 4567">
+                    </div>
+                </div>
+
+                <!-- Verification code -->
+                <div id="input-verify-code" class="input-group">
+                    <label class="input-label">Verification Code</label>
+                    <div class="verify-input-wrapper">
+                        <input id="verify-code" class="verify-input" name="verify-code" type="text" placeholder="Enter code">
+                        <button id="get-code" class="get-code-btn" type="button">Get Code</button>
+                    </div>
+                </div>
+
+                <!-- Hidden fields -->
+                <input name="clientMac" id="cMac" type="hidden">
+                <input name="radiusSvrIp" id="radiusServerIp" type="hidden">
+            </form>
+
+            <!-- Action buttons -->
+            <div id="button-area" class="button-area">
+                <button id="button-login" class="btn btn-primary">Connect to WiFi</button>
+            </div>
+
+            <!-- Divider -->
+            <div class="divider">
+                <span>or</span>
+            </div>
+
+            <!-- Buy voucher CTA -->
+            <div class="buy-voucher-section">
+                <p class="buy-voucher-text">Don't have a voucher?</p>
+                <a id="buy-voucher-btn" href="#" class="btn btn-accent" onclick="redirectToBuyVoucher()">
+                    <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path>
+                        <line x1="3" y1="6" x2="21" y2="6"></line>
+                        <path d="M16 10a4 4 0 0 1-8 0"></path>
+                    </svg>
+                    Buy Voucher with EcoCash
+                </a>
+                <p class="ecocash-note">Pay instantly • Receive via SMS • Connect in seconds</p>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="portal-footer">
+            <p>Powered by <strong>DING Technologies</strong></p>
+            <p class="footer-link"><a href="https://ding.co.zw" target="_blank">www.ding.co.zw</a></p>
+        </div>
+    </div>
+
+    <!-- Form Auth Modal -->
+    <div id="form-auth-msg" class="modal-overlay">
+        <div id="form-auth-outer" class="modal-content">
+            <button id="form-auth-close" class="modal-close" type="button">&times;</button>
+            <div id="form-auth-inner" class="modal-inner">
+                <div id="form-auth-header" class="modal-header">
+                    <div id="form-auth-title" class="modal-title"></div>
+                    <div id="form-auth-note" class="modal-note"></div>
+                </div>
+                <div id="form-auth-content" class="modal-body"></div>
+                <div id="form-auth-footer" class="modal-footer">
+                    <a id="form-auth-submit" href="javascript:void(0);" class="btn btn-primary">Submit</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="jquery.min.js"></script>
+    <script src="index.js"></script>
+</body>
+</html>
