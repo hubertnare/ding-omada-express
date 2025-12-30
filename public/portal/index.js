@@ -18,8 +18,11 @@ var VOUCHER_ACCESS_TYPE = 3,
 
 var MAX_INPUT_LEN = 2000;
 
-// DING Voucher App URL - UPDATE THIS TO YOUR DEPLOYED APP URL
-var VOUCHER_APP_URL = 'https://omada-voucher-purchase.lovable.app';
+// ==========================================
+// VOUCHER APP CONFIGURATION
+// Update this URL to your deployed Netlify app
+// ==========================================
+var VOUCHER_APP_URL = 'https://ding-tech.netlify.app';
 
 // Ajax helper
 var Ajax = {
@@ -98,9 +101,11 @@ var errorHintMap = {
 var isCommited;
 var formAuthController = useFormAuthController();
 
-// Redirect to voucher purchase app
+// ==========================================
+// VOUCHER PURCHASE REDIRECT FLOW
+// ==========================================
 function redirectToBuyVoucher() {
-    // Pass current portal parameters so user can return
+    // Build the current portal URL with all OMADA parameters to return to
     var returnParams = new URLSearchParams();
     if (clientMac) returnParams.set('clientMac', clientMac);
     if (apMac) returnParams.set('apMac', apMac);
@@ -110,18 +115,35 @@ function redirectToBuyVoucher() {
     if (vid) returnParams.set('vid', vid);
     if (originUrl) returnParams.set('originUrl', originUrl);
     
+    // Build the portal return URL
     var portalReturnUrl = window.location.origin + window.location.pathname + '?' + returnParams.toString();
     
-    // Redirect to voucher app with return URL
-    window.location.href = VOUCHER_APP_URL + '?returnUrl=' + encodeURIComponent(portalReturnUrl);
+    // Redirect to voucher app with return URL and voucher mode
+    window.location.href = VOUCHER_APP_URL + '?returnUrl=' + encodeURIComponent(portalReturnUrl) + '&mode=voucher';
 }
 
 // Check if returning from voucher purchase with a code
 function checkForPurchasedVoucher() {
     var purchasedCode = getQueryStringKey('voucherCode');
-    if (purchasedCode) {
-        document.getElementById('voucherCode').value = purchasedCode;
-        showHint('Voucher code filled in! Click "Connect to WiFi" to get online.', 'success');
+    var purchaseSuccess = getQueryStringKey('purchaseSuccess');
+    
+    if (purchasedCode && purchaseSuccess === 'true') {
+        var voucherInput = document.getElementById('voucherCode');
+        if (voucherInput) {
+            voucherInput.value = purchasedCode;
+            voucherInput.classList.add('success');
+            
+            // Show success message
+            var successDiv = document.createElement('div');
+            successDiv.className = 'success-message';
+            successDiv.innerHTML = '<h3>✓ Voucher Purchased!</h3><p>Your voucher code has been filled in. Click Connect to get online.</p>';
+            
+            var operSection = document.querySelector('.oper-section');
+            var hintEl = document.getElementById('oper-hint');
+            if (operSection && hintEl) {
+                operSection.insertBefore(successDiv, hintEl.nextSibling);
+            }
+        }
     }
 }
 
@@ -129,18 +151,14 @@ function showHint(message, type) {
     var hint = document.getElementById('oper-hint');
     hint.innerHTML = message;
     hint.style.display = 'block';
-    if (type === 'success') {
-        hint.style.color = '#00A859';
-    } else {
-        hint.style.color = '#EF4444';
-    }
+    hint.className = type === 'success' ? 'success' : '';
 }
 
-function getQueryStringKey (key) {
+function getQueryStringKey(key) {
     return getQueryStringAsObject()[key];
 }
 
-function getQueryStringAsObject () {
+function getQueryStringAsObject() {
     var b, cv, e, k, ma, sk, v, r = {},
         d = function (v) { return decodeURIComponent(v); },
         q = window.location.search.substring(1),
@@ -200,7 +218,7 @@ Ajax.post(
         globalConfig = {
             authType: data.authType,
             hotspotTypes: !!data.hotspot && data.hotspot.enabledTypes || [],
-            buttonText: data.portalCustomize.buttonText || 'Connect to WiFi',
+            buttonText: data.portalCustomize.buttonText || 'Connect',
             formAuthButtonText: data.portalCustomize.formAuthButtonText || 'Take the Survey',
             formAuth: data.formAuth || {},
             error: data.error || 'ok',
@@ -253,7 +271,9 @@ Ajax.post(
             checkForPurchasedVoucher();
         }
 
-        function handleSubmit() {
+        function handleSubmit(e) {
+            if (e) e.preventDefault();
+            
             var submitData = {};
             submitData['authType'] = window.authType;
             
@@ -310,10 +330,11 @@ Ajax.post(
                 
                 function doAuth() {
                     // Show loading state
-                    var loginBtn = document.getElementById("button-login");
-                    var originalText = loginBtn.innerHTML;
-                    loginBtn.innerHTML = 'Connecting...';
-                    loginBtn.disabled = true;
+                    var submitBtn = document.getElementById("submit-btn");
+                    var originalText = submitBtn.innerHTML;
+                    submitBtn.innerHTML = 'Connecting...';
+                    submitBtn.disabled = true;
+                    submitBtn.classList.add('loading');
                     
                     Ajax.post(submitUrl, JSON.stringify(submitData).toString(), function(data) {
                         data = JSON.parse(data);
@@ -326,8 +347,9 @@ Ajax.post(
                             }, 1000);
                         } else {
                             showHint(errorHintMap[data.errorCode] || 'Connection failed.');
-                            loginBtn.innerHTML = originalText;
-                            loginBtn.disabled = false;
+                            submitBtn.innerHTML = originalText;
+                            submitBtn.disabled = false;
+                            submitBtn.classList.remove('loading');
                         }
                     });
                 }
@@ -341,7 +363,7 @@ Ajax.post(
             document.getElementById("input-password").style.display = "none";
             document.getElementById("input-phone-num").style.display = "none";
             document.getElementById("input-verify-code").style.display = "none";
-            document.getElementById("button-login").style.display = "flex";
+            document.getElementById("submit-btn").style.display = "flex";
             window.authType = Number(type);
             
             switch (Number(type)) {
@@ -367,6 +389,10 @@ Ajax.post(
                     break;
             }
         }
+        
+        function setNormalButton() {
+            document.getElementById("submit-btn").innerHTML = globalConfig.buttonText || 'Connect';
+        }
 
         globalConfig.countryCode = "+" + parseInt(globalConfig.countryCode, 10);
         document.getElementById("country-code").value = parseInt(globalConfig.countryCode, 10);
@@ -378,11 +404,13 @@ Ajax.post(
             hotspotChange(opt.value);
         });
         
-        document.getElementById("button-login").addEventListener("click", function() {
+        // Form submission
+        document.getElementById("login-form").addEventListener("submit", function(e) {
+            e.preventDefault();
             if (window.authType === FORM_AUTH_ACCESS_TYPE) {
                 formAuthController.showFormAuth(globalConfig);
             } else {
-                handleSubmit();
+                handleSubmit(e);
             }
         });
         
@@ -455,49 +483,11 @@ function useFormAuthUtil() {
     }
 
     function getRequiredHtml(text) {
-        if (text) {
-            return '<div class="required-outer hidden">' + text + '</div>';
-        }
-        return '';
+        return '<span class="required' + (text ? '' : ' hidden') + '">' + (text || '') + '</span>';
     }
 
-    function getCardContainer(cardIndex) {
-        return $('#form-auth-content .card-container[card-index="' + cardIndex + '"]');
-    }
-
-    function getCardHtml(card, cardIndex, contentHtml) {
-        return ('<div class="card-container" card-index="' + cardIndex + '">' +
-            '<div class="card-index">' + (cardIndex + 1) + '</div>' +
-            '<div class="card-item-outer">' +
-            '<div class="title">' + escapeHtml(card.title) + '</div>' +
-            (contentHtml ? '<div class="content">' + contentHtml + '</div>' : '') +
-            '</div>' +
-            '</div>');
-    }
-
-    function getOthersValue(cardIndex) {
-        var cardDom = getCardContainer(cardIndex);
-        return cardDom.find('.others-outer input').val();
-    }
-
-    function toggleValideStatus(cardIndex, valid, isExportToExcelStr) {
-        var cardDom = getCardContainer(cardIndex),
-            requiredText = cardDom.find('.required-outer');
-        var validateText = cardDom.find('.validate-outer');
-        
-        if (valid) {
-            if (validateText) {
-                validateText.addClass('hidden');
-            }
-            requiredText.addClass('hidden');
-        } else {
-            if (isExportToExcelStr) {
-                requiredText.addClass('hidden');
-                validateText.removeClass('hidden');
-            } else {
-                requiredText.removeClass('hidden');
-            }
-        }
+    function validInput(val) {
+        return /^[^+\-@=]/.test(val);
     }
 
     return {
@@ -505,552 +495,117 @@ function useFormAuthUtil() {
         getOthersHtml: getOthersHtml,
         getValidateHtml: getValidateHtml,
         getRequiredHtml: getRequiredHtml,
-        getCardContainer: getCardContainer,
-        getCardHtml: getCardHtml,
-        getOthersValue: getOthersValue,
-        toggleValideStatus: toggleValideStatus
+        validInput: validInput
     };
 }
 
-// Form Auth Controller
 function useFormAuthController() {
-    var formAuthUtil = useFormAuthUtil();
-
-    var SINGLE_CHOICE = 0,
-        MULTIPLE_CHOICE = 1,
-        COMBOBOX = 2,
-        INPUT = 3,
-        SCORE = 4,
-        NOTE = 5;
-
-    var CARD_MAP = {};
-    
-    CARD_MAP[SINGLE_CHOICE] = {
-        render: function(card, cardIndex) {
-            var choices = formAuthUtil.transferChoices(card);
-            var options = '<div class="radio">';
-            $.each(choices, function(index, choice) {
-                options += ('<div class="choice-outer">' +
-                    '<label class="choice-item">' +
-                    '<input id="' + escapeHtml(card.title) + index + '" class="choice-input" type="radio" name="' + escapeHtml(card.title) + cardIndex + '" value="' + choice.value + '">' +
-                    '<span class="text">' + escapeHtml(choice.text) + '</span>' +
-                    '</label>' +
-                    '</div>');
-            });
-            options += '</div>';
-
-            if (card.others) {
-                options += formAuthUtil.getOthersHtml();
-                options += formAuthUtil.getValidateHtml();
-            }
-
-            if (card.required) {
-                options += formAuthUtil.getRequiredHtml('Please choose an answer.');
-            }
-
-            return formAuthUtil.getCardHtml(card, cardIndex, options);
-        },
-        getValue: function(card, cardIndex) {
-            var cardDom = formAuthUtil.getCardContainer(cardIndex),
-                checkbox = cardDom.find('input[type="radio"]'),
-                othersVal = card.choices.length;
-
-            var answer = { type: card.type };
-
-            checkbox.each(function() {
-                if ($(this).prop("checked")) {
-                    var val = parseInt($(this).val());
-                    if (val === othersVal) {
-                        answer.others = formAuthUtil.getOthersValue(cardIndex);
-                    } else {
-                        answer.choiceAnswer = [val];
-                    }
-                }
-            });
-
-            return answer;
-        },
-        bindEvent: function(card, cardContainer) {
-            var self = this,
-                radios = cardContainer.find('input[type="radio"]');
-
-            cardContainer.on('ev_valid', function() {
-                self.validate(card, cardContainer.attr('card-index'));
-            });
-
-            radios.click(function() {
-                cardContainer.trigger('ev_valid');
-            });
-
-            if (card.others) {
-                var othersVal = card.choices.length,
-                    othersInput = cardContainer.find('.others-outer');
-
-                radios.click(function() {
-                    if ($(this).prop("checked") && parseInt($(this).attr("value")) === othersVal) {
-                        othersInput.removeClass('hidden');
-                    } else {
-                        othersInput.addClass('hidden');
-                    }
-                });
-            }
-        },
-        validate: function(card, cardIndex) {
-            var valid = !card.required,
-                cardDom = formAuthUtil.getCardContainer(cardIndex);
-
-            var radio = cardDom.find('input[type="radio"]:checked');
-            var regex = /^[^+@=\-]/;
-
-            if (radio.length > 0) {
-                var isOthersRadio = parseInt(radio.val()) === card.choices.length;
-                if (isOthersRadio && formAuthUtil.getOthersValue(cardIndex) && !regex.test(formAuthUtil.getOthersValue(cardIndex))) {
-                    formAuthUtil.toggleValideStatus(cardIndex, false, true);
-                    return false;
-                }
-
-                if (card.required) {
-                    if (isOthersRadio && !formAuthUtil.getOthersValue(cardIndex)) {
-                        formAuthUtil.toggleValideStatus(cardIndex, false);
-                        return false;
-                    }
-                }
-            } else {
-                formAuthUtil.toggleValideStatus(cardIndex, valid);
-                return valid;
-            }
-
-            formAuthUtil.toggleValideStatus(cardIndex, true);
-            return true;
-        }
-    };
-
-    CARD_MAP[MULTIPLE_CHOICE] = {
-        render: function(card, cardIndex) {
-            var choices = formAuthUtil.transferChoices(card);
-            var options = '<div class="checkbox">';
-            $.each(choices, function(index, choice) {
-                options += ('<div class="choice-outer">' +
-                    '<label class="choice-item">' +
-                    '<input id="' + escapeHtml(card.title) + index + '" class="choice-input" type="checkbox" name="' + escapeHtml(card.title) + cardIndex + '" value="' + choice.value + '">' +
-                    '<span class="text">' + escapeHtml(choice.text) + '</span>' +
-                    '</label>' +
-                    '</div>');
-            });
-            options += '</div>';
-
-            if (card.others) {
-                options += formAuthUtil.getOthersHtml();
-                options += formAuthUtil.getValidateHtml();
-            }
-
-            if (card.required) {
-                options += formAuthUtil.getRequiredHtml('Please choose an answer.');
-            }
-
-            return formAuthUtil.getCardHtml(card, cardIndex, options);
-        },
-        getValue: function(card, cardIndex) {
-            var cardDom = formAuthUtil.getCardContainer(cardIndex),
-                checkbox = cardDom.find('input[type="checkbox"]'),
-                othersVal = card.choices.length;
-
-            var answer = { type: card.type, choiceAnswer: [] };
-
-            checkbox.each(function() {
-                if ($(this).prop("checked")) {
-                    var val = parseInt($(this).val());
-                    if (val === othersVal) {
-                        answer.others = formAuthUtil.getOthersValue(cardIndex);
-                    } else {
-                        answer.choiceAnswer.push(val);
-                    }
-                }
-            });
-
-            return answer;
-        },
-        bindEvent: function(card, cardContainer) {
-            var self = this,
-                checkboxes = cardContainer.find('input[type="checkbox"]');
-
-            cardContainer.on('ev_valid', function() {
-                self.validate(card, cardContainer.attr('card-index'));
-            });
-
-            checkboxes.click(function() {
-                cardContainer.trigger('ev_valid');
-            });
-
-            if (card.others) {
-                var othersVal = card.choices.length,
-                    checkbox = checkboxes.filter('[value="' + othersVal + '"]'),
-                    othersInput = cardContainer.find('.others-outer');
-
-                checkbox.click(function() {
-                    if ($(this).prop("checked")) {
-                        othersInput.removeClass('hidden');
-                    } else {
-                        othersInput.addClass('hidden');
-                    }
-                });
-            }
-        },
-        validate: function(card, cardIndex) {
-            var valid = !card.required,
-                cardDom = formAuthUtil.getCardContainer(cardIndex);
-
-            var checkbox = cardDom.find('input[type="checkbox"]'),
-                selected = [];
-            var regex = /^[^+@=\-]/;
-
-            if (card.required) {
-                checkbox.each(function() {
-                    if ($(this).prop("checked")) {
-                        selected.push(parseInt($(this).val()));
-                    }
-                });
-
-                if (selected.length > 0) {
-                    var othersValue = card.choices.length,
-                        hasOthers = selected.indexOf(othersValue) !== -1;
-
-                    if (hasOthers && formAuthUtil.getOthersValue(cardIndex) && !regex.test(formAuthUtil.getOthersValue(cardIndex))) {
-                        formAuthUtil.toggleValideStatus(cardIndex, false, true);
-                        return false;
-                    }
-
-                    if (card.required) {
-                        if (hasOthers && !formAuthUtil.getOthersValue(cardIndex)) {
-                            formAuthUtil.toggleValideStatus(cardIndex, false);
-                            return false;
-                        }
-                    }
-                } else {
-                    formAuthUtil.toggleValideStatus(cardIndex, valid);
-                    return valid;
-                }
-            }
-
-            formAuthUtil.toggleValideStatus(cardIndex, true);
-            return true;
-        }
-    };
-
-    CARD_MAP[COMBOBOX] = {
-        render: function(card, cardIndex) {
-            var choices = formAuthUtil.transferChoices(card);
-            var options = '<select class="combobox">';
-            $.each(choices, function(index, choice) {
-                options += '<option value="' + choice.value + '">' + escapeHtml(choice.text) + '</option>';
-            });
-            options += '</select>';
-
-            if (card.others) {
-                options += formAuthUtil.getOthersHtml();
-            }
-
-            if (card.required) {
-                options += formAuthUtil.getRequiredHtml('Please choose an answer.');
-            }
-
-            return formAuthUtil.getCardHtml(card, cardIndex, options);
-        },
-        getValue: function(card, cardIndex) {
-            var cardDom = formAuthUtil.getCardContainer(cardIndex),
-                selectVal = parseInt(cardDom.find('select').val());
-
-            var answer = { type: card.type };
-
-            if (selectVal === card.choices.length) {
-                answer.others = formAuthUtil.getOthersValue(cardIndex);
-            } else {
-                answer.choiceAnswer = [selectVal];
-            }
-            return answer;
-        },
-        bindEvent: function(card, cardContainer) {
-            if (card.others) {
-                var othersVal = card.choices.length,
-                    combobox = cardContainer.find('select.combobox'),
-                    othersInput = cardContainer.find('.others-outer');
-
-                combobox.on("change", function() {
-                    if (parseInt($(this).val()) === othersVal) {
-                        othersInput.removeClass('hidden');
-                    } else {
-                        othersInput.addClass('hidden');
-                    }
-                });
-            }
-        },
-        validate: function(card, cardIndex) {
-            var valid = !card.required,
-                cardDom = formAuthUtil.getCardContainer(cardIndex);
-
-            if (card.required) {
-                var selectValue = cardDom.find('select').val();
-                if (selectValue) {
-                    var isOthersCombo = parseInt(selectValue) === card.choices.length;
-                    if (!isOthersCombo || formAuthUtil.getOthersValue(cardIndex)) {
-                        valid = true;
-                    }
-                }
-            }
-
-            formAuthUtil.toggleValideStatus(cardIndex, valid);
-            return valid;
-        }
-    };
-
-    CARD_MAP[INPUT] = {
-        render: function(card, cardIndex) {
-            var html = '<input class="input" maxlength="' + MAX_INPUT_LEN + '" type="text" placeholder="Enter your answer" />';
-
-            html += formAuthUtil.getValidateHtml();
-            if (card.required) {
-                html += formAuthUtil.getRequiredHtml('Please enter a response.');
-            }
-
-            return formAuthUtil.getCardHtml(card, cardIndex, html);
-        },
-        getValue: function(card, cardIndex) {
-            var cardDom = formAuthUtil.getCardContainer(cardIndex),
-                input = cardDom.find('input');
-
-            return {
-                type: card.type,
-                inputAnswer: input.val()
-            };
-        },
-        bindEvent: function(card, cardContainer) {
-            var self = this,
-                input = cardContainer.find('input');
-
-            cardContainer.on('ev_valid', function() {
-                self.validate(card, cardContainer.attr('card-index'));
-            });
-
-            input.on('focusout', function() {
-                cardContainer.trigger('ev_valid');
-            });
-        },
-        validate: function(card, cardIndex) {
-            var valid = !card.required,
-                cardDom = formAuthUtil.getCardContainer(cardIndex);
-            var input = cardDom.find('.input');
-            var regex = /^[^+@=\-]/;
-            var isExportToExcelStr = regex.test(input.val());
-
-            if (card.required) {
-                if (!input.val()) {
-                    formAuthUtil.toggleValideStatus(cardIndex, false);
-                    return false;
-                }
-            }
-
-            if (!isExportToExcelStr) {
-                formAuthUtil.toggleValideStatus(cardIndex, false, true);
-                return false;
-            }
-
-            formAuthUtil.toggleValideStatus(cardIndex, true);
-            return true;
-        }
-    };
-
-    CARD_MAP[SCORE] = {
-        render: function(card, cardIndex) {
-            var html = '<div class="score-outer">';
-            html += '<div class="score-wrapper">';
-            for (var i = 1; i <= 5; i++) {
-                html += '<div class="score-icon" score="' + i + '"></div>';
-            }
-            html += '</div>';
-            html += '<div class="score-tip hidden"></div>';
-            html += '<div class="score-comment">';
-            html += '<div class="comment-icon-outer">';
-            html += '<span class="icon"></span>';
-            html += '<span class="text">Add a comment</span>';
-            html += '</div>';
-            html += '<textarea class="comment-area" maxlength="' + MAX_INPUT_LEN + '" placeholder="Share your thoughts..."></textarea>';
-            html += '</div>';
-            html += '</div>';
-
-            if (card.required) {
-                html += formAuthUtil.getRequiredHtml('Please give a rating.');
-            }
-
-            return formAuthUtil.getCardHtml(card, cardIndex, html);
-        },
-        getValue: function(card, cardIndex) {
-            var cardDom = formAuthUtil.getCardContainer(cardIndex),
-                score = cardDom.find('.score-icon.active'),
-                answer = { type: card.type };
-
-            if (score.length > 0) {
-                answer.score = parseInt(score.last().attr('score'));
-            }
-
-            var commentDom = cardDom.find('.score-comment.active');
-            if (commentDom.length > 0) {
-                answer.inputAnswer = commentDom.find('textarea').val();
-            }
-
-            return answer;
-        },
-        bindEvent: function(card, cardContainer) {
-            var scoreIcon = cardContainer.find('.score-icon'),
-                scoreTip = cardContainer.find('.score-tip'),
-                writeIcon = cardContainer.find('.comment-icon-outer'),
-                self = this;
-
-            cardContainer.on('ev_valid', function() {
-                self.validate(card, cardContainer.attr('card-index'));
-            });
-
-            scoreIcon.click(function() {
-                scoreIcon.removeClass('active');
-
-                $(this).addClass('active')
-                    .prevAll().addClass('active');
-
-                var index = $(this).attr('score') - 1;
-                if (card.scoreNotes[index]) {
-                    scoreTip.text(card.scoreNotes[index]).removeClass('hidden');
-                } else {
-                    scoreTip.text('').addClass('hidden');
-                }
-
-                cardContainer.trigger('ev_valid');
-            });
-
-            writeIcon.click(function() {
-                writeIcon.parent().toggleClass('active');
-            });
-        },
-        validate: function(card, cardIndex) {
-            var valid = !card.required,
-                cardDom = formAuthUtil.getCardContainer(cardIndex);
-
-            if (card.required) {
-                var scores = cardDom.find('.score-icon.active');
-                if (scores.length > 0) {
-                    valid = true;
-                }
-            }
-
-            formAuthUtil.toggleValideStatus(cardIndex, valid);
-            return valid;
-        }
-    };
-
-    CARD_MAP[NOTE] = {
-        render: formAuthUtil.getCardHtml,
-        getValue: function(card, cardIndex) {
-            return { type: card.type };
-        }
-    };
+    var util = useFormAuthUtil();
+    var formAuthData = {};
 
     function init(config) {
-        $("#access-title").html('');
-        $("#button-login").html(globalConfig.formAuthButtonText);
-        window.authType = FORM_AUTH_ACCESS_TYPE;
+        formAuthData = {};
     }
 
     function showFormAuth(config) {
-        renderFormTitle(config);
-        var html = getCardsHtml(config);
+        if (!config.formAuth || !config.formAuth.cards) return;
+        
+        var html = '';
+        $.each(config.formAuth.cards, function(index, card) {
+            html += renderCard(card, index);
+        });
+        
+        $('#form-auth-title').text(config.formAuth.title || 'Survey');
+        $('#form-auth-note').text(config.formAuth.note || '');
         $('#form-auth-content').html(html);
-        bindCardsEvent(config);
         $('#form-auth-msg').show();
         
-        // Add mobile class on small screens
-        if (window.innerWidth < 600) {
-            $('#form-auth-outer').addClass('mobile');
+        bindEvents();
+    }
+
+    function renderCard(card, index) {
+        var html = '<div class="card-container" data-index="' + index + '">';
+        html += '<div class="card-index">' + (index + 1) + '</div>';
+        html += '<div class="card-item-outer">';
+        html += '<div class="title">' + card.title + util.getRequiredHtml(card.required ? '*' : '') + '</div>';
+        
+        if (card.type === 'radio' || card.type === 'checkbox') {
+            var choices = util.transferChoices(card);
+            $.each(choices, function(i, choice) {
+                html += '<div class="choice-outer">';
+                html += '<label class="choice-item">';
+                html += '<input type="' + card.type + '" name="card_' + index + '" value="' + choice.value + '" />';
+                html += '<span class="choice-text">' + choice.text + '</span>';
+                html += '</label>';
+                html += '</div>';
+            });
+            if (card.others) {
+                html += util.getOthersHtml();
+            }
+        } else if (card.type === 'text') {
+            html += '<input type="text" class="input" maxlength="' + MAX_INPUT_LEN + '" placeholder="' + (card.placeholder || '') + '" />';
+            html += util.getValidateHtml();
         }
+        
+        html += '</div></div>';
+        return html;
     }
 
-    function bindCardsEvent(globalConfig) {
-        $('#form-auth-content .card-container').each(function() {
-            var index = parseInt($(this).attr('card-index'));
-            var card = globalConfig.formAuth.cardList[index];
-            !!CARD_MAP[card.type].bindEvent && !!CARD_MAP[card.type].bindEvent(card, $(this));
-        });
-    }
-
-    function renderFormTitle(globalConfig) {
-        $('#form-auth-title').text(globalConfig.formAuth.title);
-        $('#form-auth-note').text(globalConfig.formAuth.note);
-    }
-
-    function isFormAuthValid() {
-        var cards = globalConfig.formAuth.cardList,
-            valid = true;
-        $.each(cards, function(index, card) {
-            var validate = CARD_MAP[card.type].validate;
-            if (validate && !validate(card, index)) {
-                valid = false;
+    function bindEvents() {
+        $('#form-auth-content input[type="radio"], #form-auth-content input[type="checkbox"]').on('change', function() {
+            var $container = $(this).closest('.card-container');
+            var $othersOuter = $container.find('.others-outer');
+            var isLastChoice = $(this).val() == $container.find('input[type="radio"], input[type="checkbox"]').last().val();
+            
+            if (isLastChoice && $(this).is(':checked')) {
+                $othersOuter.removeClass('hidden');
+            } else {
+                $othersOuter.addClass('hidden');
             }
         });
-        return valid;
     }
 
     function getAuthData() {
-        var answers = [];
-        var cards = globalConfig.formAuth.cardList;
-
-        $.each(cards, function(index, card) {
-            if (CARD_MAP[card.type].getValue) {
-                answers.push(CARD_MAP[card.type].getValue(card, index));
+        var data = { formAuth: [] };
+        
+        $('#form-auth-content .card-container').each(function() {
+            var $card = $(this);
+            var cardData = {};
+            
+            var $checkedInputs = $card.find('input[type="radio"]:checked, input[type="checkbox"]:checked');
+            if ($checkedInputs.length) {
+                cardData.values = [];
+                $checkedInputs.each(function() {
+                    cardData.values.push($(this).val());
+                });
+                var $othersInput = $card.find('.others-outer input');
+                if (!$card.find('.others-outer').hasClass('hidden') && $othersInput.val()) {
+                    cardData.others = $othersInput.val();
+                }
             }
+            
+            var $textInput = $card.find('input[type="text"]:not(.others-outer input)');
+            if ($textInput.length && $textInput.val()) {
+                cardData.text = $textInput.val();
+            }
+            
+            data.formAuth.push(cardData);
         });
-
-        return {
-            formAuthId: globalConfig.formAuth.id,
-            answers: answers
-        };
+        
+        return data;
     }
 
-    function submitFormAuth(handleSubmit) {
-        if ($("#form-auth-submit").hasClass("disabled")) return;
-        if (isFormAuthValid()) {
-            handleSubmit();
+    function submitFormAuth(callback) {
+        $('#form-auth-msg').hide();
+        if (typeof callback === 'function') {
+            callback();
         }
-    }
-
-    function getCardsHtml(globalConfig) {
-        var cards = globalConfig.formAuth.cardList,
-            html = '';
-        $.each(cards, function(i, card) {
-            html += CARD_MAP[card.type].render(card, i);
-        });
-        return html;
     }
 
     return {
         init: init,
-        isFormAuthValid: isFormAuthValid,
-        getAuthData: getAuthData,
         showFormAuth: showFormAuth,
+        getAuthData: getAuthData,
         submitFormAuth: submitFormAuth
     };
-}
-
-function escapeHtml(string) {
-    if (string === null || string === undefined) {
-        return "";
-    }
-    var r = string.toString();
-    r = r.replace(/\&/g, "&amp;");
-    r = r.replace(/\</g, "&lt;");
-    r = r.replace(/\>/g, "&gt;");
-    r = r.replace(/\"/g, "&quot;");
-    r = r.replace(/\'/g, "&#39;");
-    r = r.replace(/\s/g, "&nbsp;");
-    return r;
-}
-
-function setNormalButton() {
-    $("#button-login").html(globalConfig.buttonText || 'Connect to WiFi');
 }
