@@ -1,8 +1,9 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html>
+<!DOCTYPE html>
+<html lang="en">
 <head>
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-control" content="public">
     <title>DING WiFi - Connect</title>
     <link rel="stylesheet" href="index.css" type="text/css" />
 </head>
@@ -19,14 +20,15 @@
             </div>
 
             <div class="oper-section">
-                <span id="oper-hint"></span>
+                <div id="oper-hint" class="oper-hint"></div>
+                <div id="error-tips" class="error-tips"></div>
                 
                 <div id="hotspot-section" style="display: none;">
                     <select id="hotspot-selector" class="oper-section-item"></select>
                 </div>
                 
                 <form id="login-form">
-                    <div id="input-voucher">
+                    <div id="input-voucher" style="display: none;">
                         <input id="voucherCode" class="oper-section-item input" name="voucherCode" type="text" placeholder="Enter your voucher code"/>
                     </div>
                     <div id="input-user" style="display: none;">
@@ -36,50 +38,34 @@
                         <input id="password" class="oper-section-item input" name="password" type="password" placeholder="Password"/>
                     </div>
                     <div id="input-simple" style="display: none;">
-                        <input id="simplePassword" class="password oper-section-item" name="simplePassword" type="password" placeholder="Password"/>
+                        <input id="simplePassword" class="oper-section-item input" name="simplePassword" type="password" placeholder="Password"/>
                     </div>
                     <div id="input-phone-num" style="display: none;">
-                        <span class="add">+</span><input id="country-code" class="input"><input id="phone-number" class="input" name="phone-number" type="text" placeholder="Phone Number"/>
+                        <span class="add">+</span><input id="country-code" class="input country-code-input"><input id="phone-number" class="input phone-input" name="phone-number" type="text" placeholder="Phone Number"/>
                     </div>
                     <div id="input-verify-code" style="display: none;">
-                        <input id="verify-code" class="input" name="verify-code" type="text" placeholder="Verification Code"/><button id="get-code" class="button-secondary">Get Code</button>
+                        <input id="verify-code" class="input verify-input" name="verify-code" type="text" placeholder="Verification Code"/><button id="get-code" class="button-secondary" type="button">Get Code</button>
                     </div>
                     
-                    <!-- Hidden fields for OMADA -->
-                    <input name="clientMac" id="cMac" type="hidden">
-                    <input name="radiusSvrIp" id="radiusServerIp" type="hidden">
+                    <!-- Hidden fields for OMADA - REQUIRED -->
+                    <input name="clientMac" id="cMac" style="display:none">
+                    <input name="radiusSvrIp" id="radiusServerIp" style="display:none">
                     
-                    <button id="submit-btn" class="button-primary oper-section-item" type="submit">Connect</button>
+                    <!-- CRITICAL: type="button" not type="submit" -->
+                    <button id="submit-btn" class="button-primary oper-section-item" type="button">Connect</button>
                 </form>
                 
                 <div class="divider">
                     <span>or</span>
                 </div>
                 
-                <button id="buy-voucher-btn" class="button-buy oper-section-item" type="button" onclick="redirectToBuyVoucher()">
+                <button id="buy-voucher-btn" class="button-buy oper-section-item" type="button">
                     Buy Voucher with EcoCash
                 </button>
             </div>
             
             <div class="footer-section">
                 <p>Powered by DING Technologies</p>
-            </div>
-        </div>
-    </div>
-    
-    <!-- Form Auth Modal -->
-    <div id="form-auth-msg" class="modal-overlay">
-        <div id="form-auth-outer" class="modal-content">
-            <button id="form-auth-close" class="modal-close" type="button">&times;</button>
-            <div id="form-auth-inner" class="modal-inner">
-                <div id="form-auth-header" class="modal-header">
-                    <div id="form-auth-title" class="modal-title"></div>
-                    <div id="form-auth-note" class="modal-note"></div>
-                </div>
-                <div id="form-auth-content" class="modal-body"></div>
-                <div id="form-auth-footer" class="modal-footer">
-                    <a id="form-auth-submit" href="javascript:void(0);" class="button-primary">Submit</a>
-                </div>
             </div>
         </div>
     </div>
