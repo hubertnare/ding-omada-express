@@ -95,6 +95,24 @@ body.portal {
     background: rgba(40, 167, 69, 0.2);
 }
 
+.oper-hint {
+    display: none;
+}
+
+.error-tips {
+    display: none;
+    color: #ff6b6b;
+    background: rgba(255, 107, 107, 0.15);
+    padding: 10px;
+    border-radius: 8px;
+    margin-bottom: 15px;
+    font-size: 13px;
+}
+
+.error-tips:not(:empty) {
+    display: block;
+}
+
 .oper-section-item {
     height: 48px;
     width: 100%;
