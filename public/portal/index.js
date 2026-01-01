@@ -299,79 +299,49 @@ Ajax.post(
         }
 
         // ==========================================
-        // HANDLE SUBMIT - Standard Omada Pattern
+        // POPULATE HIDDEN FORM FIELDS
         // ==========================================
-        function handleSubmit() {
-            var submitData = {};
-            submitData['authType'] = window.authType;
-            
-            switch (window.authType) {
-                case 3: // VOUCHER
-                    submitData['voucherCode'] = document.getElementById("voucherCode").value;
-                    break;
-                case 5: // LOCAL_USER
-                    submitData['localuser'] = document.getElementById("username").value;
-                    submitData['localuserPsw'] = document.getElementById("password").value;
-                    break;
-                case 1: // SIMPLE_PASSWORD
-                    submitData['simplePassword'] = document.getElementById("simplePassword").value;
-                    break;
-                case 0: // NO_AUTH
-                    break;
-                case 6: // SMS
-                    submitData['phone'] = "+" + document.getElementById("country-code").value + document.getElementById("phone-number").value;
-                    submitData['code'] = document.getElementById("verify-code").value;
-                    break;
-                case 2: // EXTERNAL_RADIUS
-                case 8: // RADIUS
-                    submitData['username'] = document.getElementById("username").value;
-                    submitData['password'] = document.getElementById("password").value;
-                    break;
-                case 15: // LDAP
-                    submitData['ldapUsername'] = document.getElementById("username").value;
-                    submitData['ldapPassword'] = document.getElementById("password").value;
-                    break;
-                default:
-                    break;
-            }
-
-            if (isCommited == false) {
-                submitData['clientMac'] = clientMac;
-                submitData['apMac'] = apMac;
-                submitData['gatewayMac'] = gatewayMac;
-                submitData['ssidName'] = ssidName;
-                submitData['radioId'] = radioId;
-                submitData['vid'] = vid;
-                
-                if (window.authType == 2 || window.authType == 8 || window.authType === 15) {
-                    if (window.authType === 15) {
-                        submitUrl = '/portal/ldap/auth';
-                    } else {
-                        submitUrl = "/portal/radius/auth";
-                    }
-                    submitData['authType'] = window.authType;
-                } else {
-                    submitData['originUrl'] = originUrl;
-                }
-                
-                function doAuth() {
-                    Ajax.post(submitUrl, JSON.stringify(submitData).toString(), function(data) {
-                        data = JSON.parse(data);
-                        if (!!data && data.errorCode === 0) {
-                            isCommited = true;
-                            document.getElementById("oper-hint").style.display = "block";
-                            document.getElementById("oper-hint").innerHTML = errorHintMap[data.errorCode];
-                            document.getElementById("oper-hint").className = 'oper-hint success';
-                            window.location.href = landingUrl;
-                        } else {
-                            document.getElementById("oper-hint").style.display = "block";
-                            document.getElementById("oper-hint").innerHTML = errorHintMap[data.errorCode] || 'Connection failed.';
-                        }
-                    });
-                }
-                doAuth();
-            }
+        function populateHiddenFields() {
+            document.getElementById('clientMacField').value = clientMac || '';
+            document.getElementById('apMacField').value = apMac || '';
+            document.getElementById('gatewayMacField').value = gatewayMac || '';
+            document.getElementById('ssidNameField').value = ssidName || '';
+            document.getElementById('radioIdField').value = radioId !== undefined ? radioId : '';
+            document.getElementById('vidField').value = vid !== undefined ? vid : '';
+            document.getElementById('originUrlField').value = originUrl || '';
+            console.log('[Portal] Hidden fields populated');
         }
+        
+        // Populate hidden fields on load
+        populateHiddenFields();
+
+        // ==========================================
+        // HANDLE FORM SUBMIT - Native Form Submission
+        // ==========================================
+        document.getElementById('login-form').addEventListener('submit', function(e) {
+            if (isCommited) {
+                e.preventDefault();
+                return false;
+            }
+            
+            // Update authType hidden field
+            document.getElementById('authTypeField').value = window.authType;
+            
+            // For RADIUS/LDAP, change form action
+            if (window.authType === 2 || window.authType === 8) {
+                this.action = '/portal/radius/auth';
+            } else if (window.authType === 15) {
+                this.action = '/portal/ldap/auth';
+            } else {
+                this.action = '/portal/auth';
+            }
+            
+            console.log('[Portal] Submitting form to:', this.action, 'authType:', window.authType);
+            isCommited = true;
+            
+            // Let the form submit naturally
+            return true;
+        });
 
         // ==========================================
         // HOTSPOT TYPE CHANGE HANDLER
@@ -416,9 +386,7 @@ Ajax.post(
             hotspotChange(opt.value);
         });
         
-        // Submit button click - NOT form submit
-        document.getElementById("submit-btn").addEventListener("click", handleSubmit);
-        
+        // Form submission is now handled by the submit event listener above
         // Buy voucher button
         document.getElementById("buy-voucher-btn").addEventListener("click", redirectToBuyVoucher);
         
