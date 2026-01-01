@@ -177,22 +177,15 @@ const Index = () => {
         return;
       }
 
-      // Format phone number for storage
-      const formattedPhone = phoneNumber ? `+263${phoneNumber.replace(/\s/g, '')}` : null;
+      // NOTE: We intentionally keep the public purchase update minimal (is_sold + status)
+      // to satisfy the public RLS policy consistently across devices/networks.
 
-      // Generate EcoCash reference (mock for now)
-      const ecocashRef = `ECO-${Date.now().toString(36).toUpperCase()}`;
-
-      // Update voucher as sold
+      // Update voucher as sold (minimal fields to satisfy public RLS purchase policy)
       const { error: updateError } = await supabase
         .from('vouchers')
         .update({
           is_sold: true,
           status: 'sold' as const,
-          sold_to: formattedPhone,
-          sold_at: new Date().toISOString(),
-          ecocash_ref: ecocashRef,
-          sms_delivered: connectionMode === "voucher" // Mark as delivered if voucher mode
         })
         .eq('id', availableVoucher.id);
 
