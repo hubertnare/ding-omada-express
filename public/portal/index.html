@@ -27,7 +27,17 @@
                     <select id="hotspot-selector" class="oper-section-item"></select>
                 </div>
                 
-                <form id="login-form">
+                <form id="login-form" method="POST" action="/portal/auth">
+                    <!-- Hidden fields for OMADA - REQUIRED -->
+                    <input type="hidden" name="authType" id="authTypeField" value="3">
+                    <input type="hidden" name="clientMac" id="clientMacField">
+                    <input type="hidden" name="apMac" id="apMacField">
+                    <input type="hidden" name="gatewayMac" id="gatewayMacField">
+                    <input type="hidden" name="ssidName" id="ssidNameField">
+                    <input type="hidden" name="radioId" id="radioIdField">
+                    <input type="hidden" name="vid" id="vidField">
+                    <input type="hidden" name="originUrl" id="originUrlField">
+                    
                     <div id="input-voucher" style="display: none;">
                         <input id="voucherCode" class="oper-section-item input" name="voucherCode" type="text" placeholder="Enter your voucher code"/>
                     </div>
@@ -41,18 +51,13 @@
                         <input id="simplePassword" class="oper-section-item input" name="simplePassword" type="password" placeholder="Password"/>
                     </div>
                     <div id="input-phone-num" style="display: none;">
-                        <span class="add">+</span><input id="country-code" class="input country-code-input"><input id="phone-number" class="input phone-input" name="phone-number" type="text" placeholder="Phone Number"/>
+                        <span class="add">+</span><input id="country-code" class="input country-code-input" name="countryCode"><input id="phone-number" class="input phone-input" name="phone" type="text" placeholder="Phone Number"/>
                     </div>
                     <div id="input-verify-code" style="display: none;">
-                        <input id="verify-code" class="input verify-input" name="verify-code" type="text" placeholder="Verification Code"/><button id="get-code" class="button-secondary" type="button">Get Code</button>
+                        <input id="verify-code" class="input verify-input" name="code" type="text" placeholder="Verification Code"/><button id="get-code" class="button-secondary" type="button">Get Code</button>
                     </div>
                     
-                    <!-- Hidden fields for OMADA - REQUIRED -->
-                    <input name="clientMac" id="cMac" style="display:none">
-                    <input name="radiusSvrIp" id="radiusServerIp" style="display:none">
-                    
-                    <!-- CRITICAL: type="button" not type="submit" -->
-                    <button id="submit-btn" class="button-primary oper-section-item" type="button">Connect</button>
+                    <button id="submit-btn" class="button-primary oper-section-item" type="submit">Connect</button>
                 </form>
                 
                 <div class="divider">
