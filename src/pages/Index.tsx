@@ -171,7 +171,8 @@ const Index = () => {
         .single();
 
       if (fetchError || !availableVoucher) {
-        toast.error('No vouchers available for this package');
+        console.error('Error fetching available voucher:', fetchError);
+        toast.error(fetchError?.message || 'No vouchers available for this package');
         setIsProcessing(false);
         return;
       }
@@ -197,7 +198,7 @@ const Index = () => {
 
       if (updateError) {
         console.error('Error updating voucher:', updateError);
-        toast.error('Failed to complete purchase');
+        toast.error(`Failed to complete purchase: ${updateError.message}`);
         setIsProcessing(false);
         return;
       }
