@@ -163,6 +163,27 @@ function checkForPurchasedVoucher() {
     var purchaseSuccess = getQueryStringKey('purchaseSuccess');
     
     if (purchasedCode && purchaseSuccess === 'true') {
+        // Switch to voucher auth type and show voucher input
+        var hotspotSelector = document.getElementById('hotspot-selector');
+        if (hotspotSelector) {
+            // Find and select the voucher option (type 3)
+            for (var i = 0; i < hotspotSelector.options.length; i++) {
+                if (hotspotSelector.options[i].value === '3') {
+                    hotspotSelector.selectedIndex = i;
+                    break;
+                }
+            }
+        }
+        
+        // Force show voucher input section
+        document.getElementById("input-voucher").style.display = "block";
+        document.getElementById("input-user").style.display = "none";
+        document.getElementById("input-password").style.display = "none";
+        document.getElementById("input-phone-num").style.display = "none";
+        document.getElementById("input-verify-code").style.display = "none";
+        window.authType = 3; // Set to voucher auth type
+        
+        // Fill in the voucher code
         var voucherInput = document.getElementById('voucherCode');
         if (voucherInput) {
             voucherInput.value = purchasedCode;
