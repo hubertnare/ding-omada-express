@@ -160,46 +160,29 @@ const Index = () => {
     setIsProcessing(true);
     
     try {
-      // Find an available voucher with this price
-      const { data: availableVoucher, error: fetchError } = await supabase
-        .from('vouchers')
-        .select('*')
-        .eq('price_value', selectedPackage.price_value)
-        .eq('status', 'active')
-        .eq('is_sold', false)
-        .limit(1)
-        .single();
+      // Purchase via backend function (bypasses client-side RLS issues on some devices)
+      const { data, error } = await supabase.functions.invoke('purchase-voucher', {
+        body: { price_value: selectedPackage.price_value },
+      });
 
-      if (fetchError || !availableVoucher) {
-        console.error('Error fetching available voucher:', fetchError);
-        toast.error(fetchError?.message || 'No vouchers available for this package');
+      if (error) {
+        console.error('Error purchasing voucher:', error);
+        toast.error(`Failed to complete purchase: ${error.message}`);
         setIsProcessing(false);
         return;
       }
 
-      // NOTE: We intentionally keep the public purchase update minimal (is_sold + status)
-      // to satisfy the public RLS policy consistently across devices/networks.
-
-      // Update voucher as sold (minimal fields to satisfy public RLS purchase policy)
-      const { error: updateError } = await supabase
-        .from('vouchers')
-        .update({
-          is_sold: true,
-          status: 'sold' as const,
-        })
-        .eq('id', availableVoucher.id);
-
-      if (updateError) {
-        console.error('Error updating voucher:', updateError);
-        toast.error(`Failed to complete purchase: ${updateError.message}`);
+      if (!data?.voucher_code) {
+        console.error('Purchase function returned no voucher_code:', data);
+        toast.error('Failed to complete purchase: No voucher available');
         setIsProcessing(false);
         return;
       }
 
       if (connectionMode === "voucher") {
-        setVoucherCode(availableVoucher.voucher_code);
+        setVoucherCode(String(data.voucher_code));
       }
-      
+
       toast.success('Purchase successful!');
       setPurchaseComplete(true);
     } catch (err) {
