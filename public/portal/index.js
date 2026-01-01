@@ -162,7 +162,11 @@ function checkForPurchasedVoucher() {
     var purchasedCode = getQueryStringKey('voucherCode');
     var purchaseSuccess = getQueryStringKey('purchaseSuccess');
     
+    console.log('[Portal] Checking for purchased voucher:', { purchasedCode: purchasedCode, purchaseSuccess: purchaseSuccess });
+    
     if (purchasedCode && purchaseSuccess === 'true') {
+        console.log('[Portal] Found purchased voucher, setting up UI...');
+        
         // Switch to voucher auth type and show voucher input
         var hotspotSelector = document.getElementById('hotspot-selector');
         if (hotspotSelector) {
@@ -170,26 +174,37 @@ function checkForPurchasedVoucher() {
             for (var i = 0; i < hotspotSelector.options.length; i++) {
                 if (hotspotSelector.options[i].value === '3') {
                     hotspotSelector.selectedIndex = i;
+                    console.log('[Portal] Selected voucher option in dropdown');
                     break;
                 }
             }
         }
         
         // Force show voucher input section
-        document.getElementById("input-voucher").style.display = "block";
+        var inputVoucher = document.getElementById("input-voucher");
+        if (inputVoucher) {
+            inputVoucher.style.display = "block";
+            console.log('[Portal] Showing voucher input section');
+        }
         document.getElementById("input-user").style.display = "none";
         document.getElementById("input-password").style.display = "none";
         document.getElementById("input-phone-num").style.display = "none";
         document.getElementById("input-verify-code").style.display = "none";
         window.authType = 3; // Set to voucher auth type
         
-        // Fill in the voucher code
-        var voucherInput = document.getElementById('voucherCode');
-        if (voucherInput) {
-            voucherInput.value = purchasedCode;
-            voucherInput.classList.add('success');
-            showHint('Voucher purchased! Click Connect to get online.', 'success');
-        }
+        // Fill in the voucher code - use setTimeout to ensure DOM is ready
+        setTimeout(function() {
+            var voucherInput = document.getElementById('voucherCode');
+            console.log('[Portal] Looking for voucherCode input:', voucherInput);
+            if (voucherInput) {
+                voucherInput.value = purchasedCode;
+                voucherInput.classList.add('success');
+                console.log('[Portal] Set voucher code value to:', purchasedCode);
+                showHint('Voucher purchased! Click Connect to get online.', 'success');
+            } else {
+                console.error('[Portal] Could not find voucherCode input element!');
+            }
+        }, 100);
     }
 }
 
