@@ -1,1 +1,4 @@
 project_id = "rdjtjzhulroqioyviaiw"
+
+[functions.purchase-voucher]
+verify_jwt = false
