@@ -337,36 +337,57 @@ Ajax.post(
             console.log('[Portal] Checking for purchased voucher:', { purchasedCode: purchasedCode, purchaseSuccess: purchaseSuccess });
             
             if (purchasedCode && purchaseSuccess === 'true') {
-                console.log('[Portal] Found purchased voucher, setting up UI...');
+                console.log('[Portal] Found purchased voucher, auto-filling...');
                 
-                // Switch to voucher auth type
+                // FORCE voucher auth type
                 window.authType = 3;
                 
-                // Update hotspot selector if exists
+                // FORCE show hotspot section with voucher selected
+                var hotspotSection = document.getElementById('hotspot-section');
                 var hotspotSelector = document.getElementById('hotspot-selector');
+                
+                if (hotspotSection) {
+                    hotspotSection.style.display = 'block';
+                }
+                
+                // Add voucher option if not present and select it
                 if (hotspotSelector) {
+                    var hasVoucherOption = false;
                     for (var i = 0; i < hotspotSelector.options.length; i++) {
                         if (hotspotSelector.options[i].value === '3') {
                             hotspotSelector.selectedIndex = i;
+                            hasVoucherOption = true;
                             break;
                         }
                     }
+                    // If voucher option doesn't exist, add it
+                    if (!hasVoucherOption) {
+                        var opt = document.createElement('option');
+                        opt.value = '3';
+                        opt.text = 'Voucher Access';
+                        hotspotSelector.add(opt);
+                        hotspotSelector.value = '3';
+                    }
                 }
                 
-                // Show voucher input, hide others
+                // FORCE show voucher input, hide ALL others
                 document.getElementById("input-voucher").style.display = "block";
                 document.getElementById("input-user").style.display = "none";
                 document.getElementById("input-password").style.display = "none";
                 document.getElementById("input-phone-num").style.display = "none";
                 document.getElementById("input-verify-code").style.display = "none";
                 document.getElementById("input-simple").style.display = "none";
+                document.getElementById("submit-btn").style.display = "block";
                 
-                // Fill voucher code
+                // Fill voucher code into the input
                 var voucherInput = document.getElementById('voucherCode');
                 if (voucherInput) {
                     voucherInput.value = purchasedCode;
-                    console.log('[Portal] Set voucher code to:', purchasedCode);
-                    showHint('Voucher code applied! Click Connect to get online.', 'success');
+                    voucherInput.setAttribute('value', purchasedCode); // Also set attribute
+                    console.log('[Portal] Voucher code filled:', purchasedCode);
+                    showHint('Voucher ready! Click Connect to get online.', 'success');
+                } else {
+                    console.error('[Portal] voucherCode input not found!');
                 }
             }
         }
