@@ -178,6 +178,36 @@ function showHint(message, type) {
 }
 
 // ==========================================
+// VOUCHER CODE NORMALIZER
+// - Keeps visible characters intact
+// - Removes hidden/invisible unicode marks
+// - Safely decodes URL-encoded strings (if double-encoded)
+// ==========================================
+function normalizeVoucherCode(code) {
+    if (code === undefined || code === null) return '';
+
+    var s = String(code);
+
+    // Sometimes values are URL-encoded more than once; decode safely.
+    try {
+        for (var i = 0; i < 2; i++) {
+            var dec = decodeURIComponent(s);
+            if (dec === s) break;
+            s = dec;
+        }
+    } catch (e) {
+        // ignore
+    }
+
+    // Normalize NBSP and remove common invisible/bidi characters.
+    s = s.replace(/\u00A0/g, ' ');
+    s = s.replace(/[\u200B-\u200D\uFEFF\u2060\u200E\u200F\u202A-\u202E]/g, '');
+
+    return s.trim();
+}
+
+
+// ==========================================
 // MAIN PORTAL INITIALIZATION - Standard Omada Pattern
 // ==========================================
 Ajax.post(
@@ -215,10 +245,14 @@ Ajax.post(
             switch (window.authType) {
                 case 3: // VOUCHER
                     var rawCode = document.getElementById("voucherCode").value;
-                    // Clean the voucher code before submitting - remove whitespace
-                    var cleanedCode = String(rawCode).trim().replace(/\s+/g, '');
-                    submitData["voucherCode"] = cleanedCode;
-                    console.log('[Portal] Voucher submit - Raw:', rawCode, 'Cleaned:', cleanedCode, 'Length:', cleanedCode.length);
+                    var normalizedCode = normalizeVoucherCode(rawCode);
+                    submitData["voucherCode"] = normalizedCode;
+                    console.log('[Portal] Voucher submit:', {
+                        raw: rawCode,
+                        normalized: normalizedCode,
+                        rawLen: String(rawCode).length,
+                        normalizedLen: normalizedCode.length
+                    });
                     break;
                 case 5: // LOCAL USER
                     submitData["localuser"] = document.getElementById("username").value;
@@ -341,11 +375,11 @@ Ajax.post(
             console.log('[Portal] Checking for purchased voucher:', { purchasedCode: purchasedCode, purchaseSuccess: purchaseSuccess });
             
             if (purchasedCode && purchaseSuccess === 'true') {
-                // CRITICAL: Clean the voucher code - remove any whitespace, special chars, and ensure proper decoding
-                purchasedCode = String(purchasedCode).trim().replace(/\s+/g, '');
-                
-                console.log('[Portal] Found purchased voucher, auto-filling. Cleaned code:', purchasedCode, 'Length:', purchasedCode.length);
-                
+                // Normalize the voucher code (removes invisible characters, trims, handles decoding)
+                purchasedCode = normalizeVoucherCode(purchasedCode);
+
+                console.log('[Portal] Found purchased voucher, auto-filling. Normalized code:', purchasedCode, 'Length:', purchasedCode.length);
+
                 // FORCE voucher auth type
                 window.authType = 3;
                 
@@ -386,25 +420,38 @@ Ajax.post(
                 document.getElementById("input-simple").style.display = "none";
                 document.getElementById("submit-btn").style.display = "block";
                 
-                // Fill voucher code into the input - use setTimeout to ensure DOM is ready
+                // Fill voucher code into the input
                 setTimeout(function() {
                     var voucherInput = document.getElementById('voucherCode');
                     if (voucherInput) {
-                        // Clear first, then set value
-                        voucherInput.value = '';
-                        voucherInput.value = purchasedCode;
-                        voucherInput.setAttribute('value', purchasedCode);
-                        
-                        // Trigger input event to ensure any listeners are notified
-                        var event = new Event('input', { bubbles: true });
-                        voucherInput.dispatchEvent(event);
-                        
+                        var normalized = normalizeVoucherCode(purchasedCode);
+
+                        // Use the native value setter (more reliable than direct assignment in some captive portals)
+                        try {
+                            var valueSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+                            valueSetter.call(voucherInput, normalized);
+                        } catch (e) {
+                            voucherInput.value = normalized;
+                        }
+
+                        voucherInput.setAttribute('value', normalized);
+
+                        // Trigger events to mimic a real user paste/typing flow
+                        voucherInput.focus();
+                        voucherInput.dispatchEvent(new Event('input', { bubbles: true }));
+                        voucherInput.dispatchEvent(new Event('change', { bubbles: true }));
+                        try {
+                            voucherInput.dispatchEvent(new KeyboardEvent('keyup', { bubbles: true, key: 'Enter' }));
+                        } catch (e) {
+                            // ignore
+                        }
+
                         console.log('[Portal] Voucher code filled:', voucherInput.value, 'Actual input value:', document.getElementById('voucherCode').value);
                         showHint('Voucher ready! Click Connect to get online.', 'success');
                     } else {
                         console.error('[Portal] voucherCode input not found!');
                     }
-                }, 100);
+                }, 0);
             }
         }
 
