@@ -385,6 +385,20 @@ Ajax.post(
 
                 console.log('[Portal] Found purchased voucher, auto-filling. Normalized code:', purchasedCode, 'Length:', purchasedCode.length);
 
+                // ==========================================
+                // STRIP voucherCode & purchaseSuccess FROM URL
+                // This makes the URL look "fresh" to Omada so auth works correctly.
+                // ==========================================
+                try {
+                    var cleanUrl = new URL(window.location.href);
+                    cleanUrl.searchParams.delete('voucherCode');
+                    cleanUrl.searchParams.delete('purchaseSuccess');
+                    window.history.replaceState({}, document.title, cleanUrl.toString());
+                    console.log('[Portal] Cleaned URL:', cleanUrl.toString());
+                } catch (e) {
+                    console.warn('[Portal] Could not clean URL:', e);
+                }
+
                 // FORCE voucher auth type
                 window.authType = 3;
                 
