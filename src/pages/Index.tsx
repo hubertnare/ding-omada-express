@@ -55,18 +55,21 @@ const Index = () => {
   const maxStep = steps.length - 1;
 
   // Check for returnUrl parameter from captive portal
+  // IMPORTANT: Do NOT decode again.
+  // `URLSearchParams.get()` already decodes the query parameter once.
+  // Double-decoding will break nested/encoded parameters that the captive portal requires.
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
-    const returnUrlParam = urlParams.get('returnUrl');
-    const modeParam = urlParams.get('mode');
-    
+    const returnUrlParam = urlParams.get("returnUrl");
+    const modeParam = urlParams.get("mode");
+
     if (returnUrlParam) {
-      setReturnUrl(decodeURIComponent(returnUrlParam));
+      setReturnUrl(returnUrlParam);
     }
-    
+
     // If mode=voucher is specified, switch to voucher mode
-    if (modeParam === 'voucher') {
-      setConnectionMode('voucher');
+    if (modeParam === "voucher") {
+      setConnectionMode("voucher");
     }
   }, []);
 
