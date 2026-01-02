@@ -143,16 +143,11 @@ function getQueryStringAsObject() {
 // VOUCHER PURCHASE REDIRECT
 // ==========================================
 function redirectToBuyVoucher() {
-    var returnParams = [];
-    if (clientMac) returnParams.push('clientMac=' + encodeURIComponent(clientMac));
-    if (apMac) returnParams.push('apMac=' + encodeURIComponent(apMac));
-    if (gatewayMac) returnParams.push('gatewayMac=' + encodeURIComponent(gatewayMac));
-    if (ssidName) returnParams.push('ssidName=' + encodeURIComponent(ssidName));
-    if (radioId !== undefined) returnParams.push('radioId=' + encodeURIComponent(radioId));
-    if (vid !== undefined) returnParams.push('vid=' + encodeURIComponent(vid));
-    if (originUrl) returnParams.push('originUrl=' + encodeURIComponent(originUrl));
-    
-    var portalReturnUrl = window.location.origin + window.location.pathname + '?' + returnParams.join('&');
+    // IMPORTANT: Preserve the *exact* captive-portal URL and query string.
+    // Omada includes critical parameters (e.g. site/t/redirectUrl) that are not safe to reconstruct.
+    var portalReturnUrl = window.location.href.split('#')[0];
+    console.log('[Portal] Redirecting to buy voucher. returnUrl:', portalReturnUrl);
+
     window.location.href = VOUCHER_APP_URL + '?returnUrl=' + encodeURIComponent(portalReturnUrl) + '&mode=voucher';
 }
 
