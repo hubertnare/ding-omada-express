@@ -214,7 +214,11 @@ Ajax.post(
             
             switch (window.authType) {
                 case 3: // VOUCHER
-                    submitData["voucherCode"] = document.getElementById("voucherCode").value;
+                    var rawCode = document.getElementById("voucherCode").value;
+                    // Clean the voucher code before submitting - remove whitespace
+                    var cleanedCode = String(rawCode).trim().replace(/\s+/g, '');
+                    submitData["voucherCode"] = cleanedCode;
+                    console.log('[Portal] Voucher submit - Raw:', rawCode, 'Cleaned:', cleanedCode, 'Length:', cleanedCode.length);
                     break;
                 case 5: // LOCAL USER
                     submitData["localuser"] = document.getElementById("username").value;
@@ -337,7 +341,10 @@ Ajax.post(
             console.log('[Portal] Checking for purchased voucher:', { purchasedCode: purchasedCode, purchaseSuccess: purchaseSuccess });
             
             if (purchasedCode && purchaseSuccess === 'true') {
-                console.log('[Portal] Found purchased voucher, auto-filling...');
+                // CRITICAL: Clean the voucher code - remove any whitespace, special chars, and ensure proper decoding
+                purchasedCode = String(purchasedCode).trim().replace(/\s+/g, '');
+                
+                console.log('[Portal] Found purchased voucher, auto-filling. Cleaned code:', purchasedCode, 'Length:', purchasedCode.length);
                 
                 // FORCE voucher auth type
                 window.authType = 3;
@@ -379,16 +386,25 @@ Ajax.post(
                 document.getElementById("input-simple").style.display = "none";
                 document.getElementById("submit-btn").style.display = "block";
                 
-                // Fill voucher code into the input
-                var voucherInput = document.getElementById('voucherCode');
-                if (voucherInput) {
-                    voucherInput.value = purchasedCode;
-                    voucherInput.setAttribute('value', purchasedCode); // Also set attribute
-                    console.log('[Portal] Voucher code filled:', purchasedCode);
-                    showHint('Voucher ready! Click Connect to get online.', 'success');
-                } else {
-                    console.error('[Portal] voucherCode input not found!');
-                }
+                // Fill voucher code into the input - use setTimeout to ensure DOM is ready
+                setTimeout(function() {
+                    var voucherInput = document.getElementById('voucherCode');
+                    if (voucherInput) {
+                        // Clear first, then set value
+                        voucherInput.value = '';
+                        voucherInput.value = purchasedCode;
+                        voucherInput.setAttribute('value', purchasedCode);
+                        
+                        // Trigger input event to ensure any listeners are notified
+                        var event = new Event('input', { bubbles: true });
+                        voucherInput.dispatchEvent(event);
+                        
+                        console.log('[Portal] Voucher code filled:', voucherInput.value, 'Actual input value:', document.getElementById('voucherCode').value);
+                        showHint('Voucher ready! Click Connect to get online.', 'success');
+                    } else {
+                        console.error('[Portal] voucherCode input not found!');
+                    }
+                }, 100);
             }
         }
 
