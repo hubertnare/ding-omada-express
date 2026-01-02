@@ -191,7 +191,8 @@ function normalizeVoucherCode(code) {
     // Sometimes values are URL-encoded more than once; decode safely.
     try {
         for (var i = 0; i < 2; i++) {
-            var dec = decodeURIComponent(s);
+            // Also treat '+' as space (URLSearchParams-style encoding)
+            var dec = decodeURIComponent(String(s).replace(/\+/g, '%20'));
             if (dec === s) break;
             s = dec;
         }
@@ -203,7 +204,16 @@ function normalizeVoucherCode(code) {
     s = s.replace(/\u00A0/g, ' ');
     s = s.replace(/[\u200B-\u200D\uFEFF\u2060\u200E\u200F\u202A-\u202E]/g, '');
 
-    return s.trim();
+    // Remove ALL whitespace (copy/paste often strips these; autofil may preserve them)
+    s = s.replace(/\s+/g, '');
+
+    // Our vouchers are numeric; if there are no letters, keep digits only.
+    if (!/[A-Za-z]/.test(s)) {
+        return s.replace(/\D/g, '');
+    }
+
+    // Otherwise keep only alphanumerics.
+    return s.replace(/[^0-9A-Za-z]/g, '');
 }
 
 
