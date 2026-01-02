@@ -27,17 +27,8 @@
                     <select id="hotspot-selector" class="oper-section-item"></select>
                 </div>
                 
-                <form id="login-form" method="POST" action="/portal/auth">
-                    <!-- Hidden fields for OMADA - REQUIRED -->
-                    <input type="hidden" name="authType" id="authTypeField" value="3">
-                    <input type="hidden" name="clientMac" id="clientMacField">
-                    <input type="hidden" name="apMac" id="apMacField">
-                    <input type="hidden" name="gatewayMac" id="gatewayMacField">
-                    <input type="hidden" name="ssidName" id="ssidNameField">
-                    <input type="hidden" name="radioId" id="radioIdField">
-                    <input type="hidden" name="vid" id="vidField">
-                    <input type="hidden" name="originUrl" id="originUrlField">
-                    
+                <!-- Form does NOT use action - we use AJAX instead -->
+                <form id="login-form">
                     <div id="input-voucher" style="display: none;">
                         <input id="voucherCode" class="oper-section-item input" name="voucherCode" type="text" placeholder="Enter your voucher code"/>
                     </div>
@@ -57,7 +48,7 @@
                         <input id="verify-code" class="input verify-input" name="code" type="text" placeholder="Verification Code"/><button id="get-code" class="button-secondary" type="button">Get Code</button>
                     </div>
                     
-                    <button id="submit-btn" class="button-primary oper-section-item" type="submit">Connect</button>
+                    <button id="submit-btn" class="button-primary oper-section-item" type="button">Connect</button>
                 </form>
                 
                 <div class="divider">
@@ -75,7 +66,6 @@
         </div>
     </div>
     
-    <script src="jquery.min.js"></script>
     <script src="index.js"></script>
 </body>
 </html>

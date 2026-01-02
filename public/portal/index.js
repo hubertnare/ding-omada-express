@@ -1,6 +1,6 @@
 /**
  * DING Technologies - WiFi Portal JavaScript
- * Omada OC200 Compatible - Follows official demo template pattern
+ * Omada OC200 Compatible - Uses AJAX JSON like official template
  */
 
 // ==========================================
@@ -39,7 +39,7 @@ var radioId = !!getQueryStringKey("radioId") ? Number(getQueryStringKey("radioId
 var vid = !!getQueryStringKey("vid") ? Number(getQueryStringKey("vid")) : undefined;
 var originUrl = getQueryStringKey("originUrl");
 var previewSite = getQueryStringKey("previewSite");
-var isCommited;
+var isCommited = false;
 
 // ==========================================
 // HOTSPOT TYPE MAPPING
@@ -55,8 +55,9 @@ var hotspotMap = {
 // ERROR MESSAGE MAPPING - Standard Omada Codes
 // ==========================================
 var errorHintMap = {
-    "0": "Connected successfully!",
+    0: "Connected successfully!",
     "-1": "Connection failed. Please try again.",
+    "-1001": "Invalid request parameters.",
     "-41500": "Invalid authentication type.",
     "-41501": "Authentication failed. Please check your credentials.",
     "-41502": "Voucher code is incorrect. Please check and try again.",
@@ -156,67 +157,23 @@ function redirectToBuyVoucher() {
 }
 
 // ==========================================
-// CHECK FOR PURCHASED VOUCHER ON RETURN
-// ==========================================
-function checkForPurchasedVoucher() {
-    var purchasedCode = getQueryStringKey('voucherCode');
-    var purchaseSuccess = getQueryStringKey('purchaseSuccess');
-    
-    console.log('[Portal] Checking for purchased voucher:', { purchasedCode: purchasedCode, purchaseSuccess: purchaseSuccess });
-    
-    if (purchasedCode && purchaseSuccess === 'true') {
-        console.log('[Portal] Found purchased voucher, setting up UI...');
-        
-        // Switch to voucher auth type and show voucher input
-        var hotspotSelector = document.getElementById('hotspot-selector');
-        if (hotspotSelector) {
-            // Find and select the voucher option (type 3)
-            for (var i = 0; i < hotspotSelector.options.length; i++) {
-                if (hotspotSelector.options[i].value === '3') {
-                    hotspotSelector.selectedIndex = i;
-                    console.log('[Portal] Selected voucher option in dropdown');
-                    break;
-                }
-            }
-        }
-        
-        // Force show voucher input section
-        var inputVoucher = document.getElementById("input-voucher");
-        if (inputVoucher) {
-            inputVoucher.style.display = "block";
-            console.log('[Portal] Showing voucher input section');
-        }
-        document.getElementById("input-user").style.display = "none";
-        document.getElementById("input-password").style.display = "none";
-        document.getElementById("input-phone-num").style.display = "none";
-        document.getElementById("input-verify-code").style.display = "none";
-        window.authType = 3; // Set to voucher auth type
-        
-        // Fill in the voucher code - use setTimeout to ensure DOM is ready
-        setTimeout(function() {
-            var voucherInput = document.getElementById('voucherCode');
-            console.log('[Portal] Looking for voucherCode input:', voucherInput);
-            if (voucherInput) {
-                voucherInput.value = purchasedCode;
-                voucherInput.classList.add('success');
-                console.log('[Portal] Set voucher code value to:', purchasedCode);
-                showHint('Voucher purchased! Click Connect to get online.', 'success');
-            } else {
-                console.error('[Portal] Could not find voucherCode input element!');
-            }
-        }, 100);
-    }
-}
-
-// ==========================================
-// SHOW HINT MESSAGE
+// SHOW ERROR/HINT MESSAGE
 // ==========================================
 function showHint(message, type) {
     var hint = document.getElementById('oper-hint');
+    var errorTips = document.getElementById('error-tips');
     if (hint) {
         hint.innerHTML = message;
         hint.style.display = 'block';
-        hint.className = 'oper-hint' + (type === 'success' ? ' success' : '');
+        if (type === 'success') {
+            hint.style.color = '#00a854';
+        } else {
+            hint.style.color = '';
+        }
+    }
+    if (errorTips && type !== 'success') {
+        errorTips.innerHTML = message;
+        errorTips.style.display = 'block';
     }
 }
 
@@ -249,6 +206,82 @@ Ajax.post(
         };
 
         // ==========================================
+        // HANDLE SUBMIT - AJAX JSON (like working template)
+        // ==========================================
+        function handleSubmit() {
+            var submitData = {};
+            submitData["authType"] = window.authType;
+            
+            switch (window.authType) {
+                case 3: // VOUCHER
+                    submitData["voucherCode"] = document.getElementById("voucherCode").value;
+                    break;
+                case 5: // LOCAL USER
+                    submitData["localuser"] = document.getElementById("username").value;
+                    submitData["localuserPsw"] = document.getElementById("password").value;
+                    break;
+                case 1: // SIMPLE PASSWORD
+                    submitData["simplePassword"] = document.getElementById("simplePassword").value;
+                    break;
+                case 0: // NO AUTH
+                    break;
+                case 6: // SMS
+                    submitData["phone"] = "+" + document.getElementById("country-code").value + document.getElementById("phone-number").value;
+                    submitData["code"] = document.getElementById("verify-code").value;
+                    break;
+                case 2: // EXTERNAL RADIUS
+                case 8: // RADIUS
+                    submitData["username"] = document.getElementById("username").value;
+                    submitData["password"] = document.getElementById("password").value;
+                    break;
+                default:
+                    break;
+            }
+            
+            if (isCommited === false) {
+                // Add client/network parameters
+                submitData["clientMac"] = clientMac;
+                submitData["apMac"] = apMac;
+                submitData["gatewayMac"] = gatewayMac;
+                submitData["ssidName"] = ssidName;
+                submitData["radioId"] = radioId;
+                submitData["vid"] = vid;
+                
+                // Set correct endpoint for RADIUS
+                if (window.authType === 2 || window.authType === 8) {
+                    submitUrl = "/portal/radius/auth";
+                    submitData["authType"] = window.authType;
+                } else {
+                    submitData["originUrl"] = originUrl;
+                }
+                
+                console.log('[Portal] Submitting to:', submitUrl, 'Data:', JSON.stringify(submitData));
+                
+                function doAuth() {
+                    Ajax.post(submitUrl, JSON.stringify(submitData).toString(), function(response) {
+                        response = JSON.parse(response);
+                        console.log('[Portal] Auth response:', response);
+                        
+                        if (!!response && response.errorCode === 0) {
+                            isCommited = true;
+                            showHint('Connected successfully! Redirecting...', 'success');
+                            // Redirect to landing page
+                            setTimeout(function() {
+                                window.location.href = landingUrl || originUrl || 'http://www.google.com';
+                            }, 1000);
+                        } else {
+                            var errorMsg = errorHintMap[response.errorCode] || ('Error: ' + response.errorCode + ' - ' + (response.msg || 'Authentication failed'));
+                            showHint(errorMsg);
+                            document.getElementById("error-tips").innerHTML = errorMsg;
+                            document.getElementById("error-tips").style.display = "block";
+                        }
+                    });
+                }
+                doAuth();
+            }
+        }
+
+        // ==========================================
         // PAGE CONFIG PARSER
         // ==========================================
         function pageConfigParse() {
@@ -278,10 +311,6 @@ Ajax.post(
                     hotspotChange(2);
                     window.authType = 2;
                     break;
-                case 15: // EXTERNAL_LDAP
-                    hotspotChange(15);
-                    window.authType = 15;
-                    break;
                 case 11: // HOTSPOT
                     document.getElementById("hotspot-section").style.display = "block";
                     var options = "";
@@ -294,54 +323,53 @@ Ajax.post(
                     break;
             }
             
-            // Check for purchased voucher code
+            // Check for purchased voucher code AFTER page is configured
             checkForPurchasedVoucher();
         }
 
         // ==========================================
-        // POPULATE HIDDEN FORM FIELDS
+        // CHECK FOR PURCHASED VOUCHER ON RETURN
         // ==========================================
-        function populateHiddenFields() {
-            document.getElementById('clientMacField').value = clientMac || '';
-            document.getElementById('apMacField').value = apMac || '';
-            document.getElementById('gatewayMacField').value = gatewayMac || '';
-            document.getElementById('ssidNameField').value = ssidName || '';
-            document.getElementById('radioIdField').value = radioId !== undefined ? radioId : '';
-            document.getElementById('vidField').value = vid !== undefined ? vid : '';
-            document.getElementById('originUrlField').value = originUrl || '';
-            console.log('[Portal] Hidden fields populated');
+        function checkForPurchasedVoucher() {
+            var purchasedCode = getQueryStringKey('voucherCode');
+            var purchaseSuccess = getQueryStringKey('purchaseSuccess');
+            
+            console.log('[Portal] Checking for purchased voucher:', { purchasedCode: purchasedCode, purchaseSuccess: purchaseSuccess });
+            
+            if (purchasedCode && purchaseSuccess === 'true') {
+                console.log('[Portal] Found purchased voucher, setting up UI...');
+                
+                // Switch to voucher auth type
+                window.authType = 3;
+                
+                // Update hotspot selector if exists
+                var hotspotSelector = document.getElementById('hotspot-selector');
+                if (hotspotSelector) {
+                    for (var i = 0; i < hotspotSelector.options.length; i++) {
+                        if (hotspotSelector.options[i].value === '3') {
+                            hotspotSelector.selectedIndex = i;
+                            break;
+                        }
+                    }
+                }
+                
+                // Show voucher input, hide others
+                document.getElementById("input-voucher").style.display = "block";
+                document.getElementById("input-user").style.display = "none";
+                document.getElementById("input-password").style.display = "none";
+                document.getElementById("input-phone-num").style.display = "none";
+                document.getElementById("input-verify-code").style.display = "none";
+                document.getElementById("input-simple").style.display = "none";
+                
+                // Fill voucher code
+                var voucherInput = document.getElementById('voucherCode');
+                if (voucherInput) {
+                    voucherInput.value = purchasedCode;
+                    console.log('[Portal] Set voucher code to:', purchasedCode);
+                    showHint('Voucher code applied! Click Connect to get online.', 'success');
+                }
+            }
         }
-        
-        // Populate hidden fields on load
-        populateHiddenFields();
-
-        // ==========================================
-        // HANDLE FORM SUBMIT - Native Form Submission
-        // ==========================================
-        document.getElementById('login-form').addEventListener('submit', function(e) {
-            if (isCommited) {
-                e.preventDefault();
-                return false;
-            }
-            
-            // Update authType hidden field
-            document.getElementById('authTypeField').value = window.authType;
-            
-            // For RADIUS/LDAP, change form action
-            if (window.authType === 2 || window.authType === 8) {
-                this.action = '/portal/radius/auth';
-            } else if (window.authType === 15) {
-                this.action = '/portal/ldap/auth';
-            } else {
-                this.action = '/portal/auth';
-            }
-            
-            console.log('[Portal] Submitting form to:', this.action, 'authType:', window.authType);
-            isCommited = true;
-            
-            // Let the form submit naturally
-            return true;
-        });
 
         // ==========================================
         // HOTSPOT TYPE CHANGE HANDLER
@@ -362,7 +390,6 @@ Ajax.post(
                 case 5: // LOCAL_USER
                 case 2: // EXTERNAL_RADIUS
                 case 8: // RADIUS
-                case 15: // LDAP
                     document.getElementById("input-user").style.display = "block";
                     document.getElementById("input-password").style.display = "block";
                     break;
@@ -375,10 +402,13 @@ Ajax.post(
         
         // Set country code
         globalConfig.countryCode = "+" + parseInt(globalConfig.countryCode, 10);
-        document.getElementById("country-code").value = parseInt(globalConfig.countryCode, 10);
+        var countryCodeEl = document.getElementById("country-code");
+        if (countryCodeEl) {
+            countryCodeEl.value = parseInt(globalConfig.countryCode, 10);
+        }
         
         // ==========================================
-        // EVENT LISTENERS - Standard Omada Pattern
+        // EVENT LISTENERS
         // ==========================================
         document.getElementById("hotspot-selector").addEventListener("change", function() {
             var obj = document.getElementById("hotspot-selector");
@@ -386,7 +416,18 @@ Ajax.post(
             hotspotChange(opt.value);
         });
         
-        // Form submission is now handled by the submit event listener above
+        // Submit button - use AJAX, NOT form submission
+        document.getElementById("submit-btn").addEventListener("click", function(e) {
+            e.preventDefault();
+            handleSubmit();
+        });
+        
+        // Also handle form submit event
+        document.getElementById("login-form").addEventListener("submit", function(e) {
+            e.preventDefault();
+            handleSubmit();
+        });
+        
         // Buy voucher button
         document.getElementById("buy-voucher-btn").addEventListener("click", redirectToBuyVoucher);
         
@@ -395,32 +436,24 @@ Ajax.post(
             e.preventDefault();
             var phoneNum = document.getElementById("phone-number").value;
             
-            function sendSmsAuthCode() {
-                Ajax.post("/portal/sendSmsAuthCode",
-                    JSON.stringify({
-                        clientMac: clientMac,
-                        apMac: apMac,
-                        gatewayMac: gatewayMac,
-                        ssidName: ssidName,
-                        radioId: radioId,
-                        vid: vid,
-                        phone: "+" + document.getElementById("country-code").value + phoneNum
-                    }), function(data) {
-                        data = JSON.parse(data);
-                        if (data.errorCode !== 0) {
-                            document.getElementById("oper-hint").style.display = "block";
-                            document.getElementById("oper-hint").innerHTML = errorHintMap[data.errorCode] || 'Failed to send code.';
-                        } else {
-                            document.getElementById("oper-hint").style.display = "block";
-                            document.getElementById("oper-hint").innerHTML = "Verification code sent!";
-                            document.getElementById("oper-hint").className = 'oper-hint success';
-                        }
+            Ajax.post("/portal/sendSmsAuthCode",
+                JSON.stringify({
+                    clientMac: clientMac,
+                    apMac: apMac,
+                    gatewayMac: gatewayMac,
+                    ssidName: ssidName,
+                    radioId: radioId,
+                    vid: vid,
+                    phone: "+" + document.getElementById("country-code").value + phoneNum
+                }), function(response) {
+                    response = JSON.parse(response);
+                    if (response.errorCode !== 0) {
+                        showHint(errorHintMap[response.errorCode] || 'Failed to send code.');
+                    } else {
+                        showHint("Verification code sent!", 'success');
                     }
-                );
-            }
-            sendSmsAuthCode();
-            document.getElementById("oper-hint").style.display = "block";
-            document.getElementById("oper-hint").innerHTML = "Sending code...";
+                }
+            );
         });
         
         // Initialize page
