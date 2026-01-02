@@ -193,16 +193,16 @@ Ajax.post(
     }),
     function (res) {
         res = JSON.parse(res);
-        data = res.result;
+        data = res.result || {};
         submitUrl = "/portal/auth";
-        var landingUrl = data.landingUrl;
+        var landingUrl = data.landingUrl || originUrl || 'http://www.google.com';
         isCommited = false;
         
         globalConfig = {
-            authType: data.authType,
-            hotspotTypes: !!data.hotspot && data.hotspot.enabledTypes || [],
+            authType: data.authType || 11,
+            hotspotTypes: (data.hotspot && data.hotspot.enabledTypes) || [3],
             error: data.error || 'ok',
-            countryCode: !!data.sms && data.sms.countryCode || 263
+            countryCode: (data.sms && data.sms.countryCode) || 263
         };
 
         // ==========================================
