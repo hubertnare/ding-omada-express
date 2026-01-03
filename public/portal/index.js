@@ -62,6 +62,9 @@ var radioId = !!getQueryStringKey("radioId") ? Number(getQueryStringKey("radioId
 var vid = !!getQueryStringKey("vid") ? Number(getQueryStringKey("vid")) : undefined;
 var originUrl = getQueryStringKey("originUrl");
 var previewSite = getQueryStringKey("previewSite");
+var site = getQueryStringKey("site"); // FIX: Capture mandatory site parameter for Omada v5.x+
+
+console.log('[Portal] Captured params - site:', site, 'clientMac:', clientMac, 'apMac:', apMac);
 
 // ==========================================
 // HOTSPOT TYPE MAPPING
@@ -273,7 +276,7 @@ Ajax.post(
                 case 3: // VOUCHER
                     var rawCode = document.getElementById("voucherCode").value;
                     var normalizedCode = normalizeVoucherCode(rawCode);
-                    submitData["voucherCode"] = normalizedCode;
+                    submitData["voucher"] = normalizedCode; // FIX: Use 'voucher' key instead of 'voucherCode'
                     console.log('[Portal] Voucher submit:', {
                         raw: rawCode,
                         normalized: normalizedCode,
@@ -303,7 +306,7 @@ Ajax.post(
                     break;
             }
             
-            if (isCommited === false) {
+        if (isCommited === false) {
                 // Add client/network parameters
                 submitData["clientMac"] = clientMac;
                 submitData["apMac"] = apMac;
@@ -311,6 +314,11 @@ Ajax.post(
                 submitData["ssidName"] = ssidName;
                 submitData["radioId"] = radioId;
                 submitData["vid"] = vid;
+                
+                // FIX: Add mandatory site parameter for Omada v5.x+
+                if (site) {
+                    submitData["site"] = site;
+                }
                 
                 // Set correct endpoint for RADIUS
                 if (window.authType === 2 || window.authType === 8) {
