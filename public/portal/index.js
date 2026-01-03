@@ -31,6 +31,29 @@ var Ajax = {
 var data = {};
 var globalConfig = {};
 var submitUrl;
+var isCommited = false;
+
+// ==========================================
+// CAPTURE VOUCHER PARAMS BEFORE CLEANING URL
+// This ensures Omada sees a "fresh" portal URL while we still have the voucher code
+// ==========================================
+var _purchasedVoucherCode = getQueryStringKey('voucherCode');
+var _purchaseSuccess = getQueryStringKey('purchaseSuccess');
+
+// Clean URL immediately if we have purchase params (BEFORE any Omada API calls)
+if (_purchasedVoucherCode && _purchaseSuccess === 'true') {
+    try {
+        var cleanUrl = new URL(window.location.href);
+        cleanUrl.searchParams.delete('voucherCode');
+        cleanUrl.searchParams.delete('purchaseSuccess');
+        window.history.replaceState({}, document.title, cleanUrl.toString());
+        console.log('[Portal] Pre-cleaned URL for Omada:', cleanUrl.toString());
+    } catch (e) {
+        console.warn('[Portal] Could not pre-clean URL:', e);
+    }
+}
+
+// Now parse query params (from cleaned URL, but we saved voucher code above)
 var clientMac = getQueryStringKey("clientMac");
 var apMac = getQueryStringKey("apMac");
 var gatewayMac = getQueryStringKey("gatewayMac") || undefined;
@@ -39,7 +62,6 @@ var radioId = !!getQueryStringKey("radioId") ? Number(getQueryStringKey("radioId
 var vid = !!getQueryStringKey("vid") ? Number(getQueryStringKey("vid")) : undefined;
 var originUrl = getQueryStringKey("originUrl");
 var previewSite = getQueryStringKey("previewSite");
-var isCommited = false;
 
 // ==========================================
 // HOTSPOT TYPE MAPPING
@@ -374,8 +396,9 @@ Ajax.post(
         // CHECK FOR PURCHASED VOUCHER ON RETURN
         // ==========================================
         function checkForPurchasedVoucher() {
-            var purchasedCode = getQueryStringKey('voucherCode');
-            var purchaseSuccess = getQueryStringKey('purchaseSuccess');
+            // Use the pre-saved voucher code (captured before URL was cleaned)
+            var purchasedCode = _purchasedVoucherCode;
+            var purchaseSuccess = _purchaseSuccess;
             
             console.log('[Portal] Checking for purchased voucher:', { purchasedCode: purchasedCode, purchaseSuccess: purchaseSuccess });
             
@@ -385,19 +408,7 @@ Ajax.post(
 
                 console.log('[Portal] Found purchased voucher, auto-filling. Normalized code:', purchasedCode, 'Length:', purchasedCode.length);
 
-                // ==========================================
-                // STRIP voucherCode & purchaseSuccess FROM URL
-                // This makes the URL look "fresh" to Omada so auth works correctly.
-                // ==========================================
-                try {
-                    var cleanUrl = new URL(window.location.href);
-                    cleanUrl.searchParams.delete('voucherCode');
-                    cleanUrl.searchParams.delete('purchaseSuccess');
-                    window.history.replaceState({}, document.title, cleanUrl.toString());
-                    console.log('[Portal] Cleaned URL:', cleanUrl.toString());
-                } catch (e) {
-                    console.warn('[Portal] Could not clean URL:', e);
-                }
+                // URL was already cleaned at script start (before Omada API calls)
 
                 // FORCE voucher auth type
                 window.authType = 3;
