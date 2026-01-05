@@ -12,6 +12,7 @@ import AdminUpload from "./pages/admin/Upload";
 import AdminVouchers from "./pages/admin/Vouchers";
 import AdminBatches from "./pages/admin/Batches";
 import AdminSettings from "./pages/admin/Settings";
+import PaymentReturn from "./pages/PaymentReturn";
 
 const queryClient = new QueryClient();
 
@@ -24,6 +25,7 @@ const App = () => (
         <BrowserRouter>
           <Routes>
             <Route path="/" element={<Index />} />
+            <Route path="/payment/return" element={<PaymentReturn />} />
             <Route path="/admin/login" element={<AdminLogin />} />
             <Route path="/admin" element={<AdminDashboard />} />
             <Route path="/admin/upload" element={<AdminUpload />} />
