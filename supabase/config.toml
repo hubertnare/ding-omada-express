@@ -5,3 +5,6 @@ verify_jwt = false
 
 [functions.ecocash-callback]
 verify_jwt = false
+
+[functions.initiate-ecocash-payment]
+verify_jwt = false
