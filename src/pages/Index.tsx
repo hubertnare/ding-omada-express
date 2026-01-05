@@ -160,38 +160,86 @@ const Index = () => {
   const handlePayment = async () => {
     if (!selectedPackage) return;
 
+    // For voucher mode, validate phone number
+    if (connectionMode === "voucher" && !validateZWPhone(phoneNumber)) {
+      toast.error("Please enter a valid phone number");
+      return;
+    }
+
     setIsProcessing(true);
     
     try {
-      // Purchase via backend function (bypasses client-side RLS issues on some devices)
-      const { data, error } = await supabase.functions.invoke('purchase-voucher', {
-        body: { price_value: selectedPackage.price_value },
+      // Format phone for EcoCash (remove leading 0, add 263)
+      const formattedPhone = phoneNumber.replace(/^0/, "");
+
+      // Initiate EcoCash payment
+      const { data, error } = await supabase.functions.invoke('initiate-ecocash-payment', {
+        body: { 
+          phone: formattedPhone,
+          amount: selectedPackage.price_value,
+          price_value: selectedPackage.price_value
+        },
       });
 
       if (error) {
-        console.error('Error purchasing voucher:', error);
-        toast.error(`Failed to complete purchase: ${error.message}`);
+        console.error('Error initiating payment:', error);
+        toast.error(`Payment failed: ${error.message}`);
         setIsProcessing(false);
         return;
       }
 
-      if (!data?.voucher_code) {
-        console.error('Purchase function returned no voucher_code:', data);
-        toast.error('Failed to complete purchase: No voucher available');
+      if (!data?.success) {
+        console.error('Payment initiation failed:', data);
+        toast.error(data?.error || 'Payment initiation failed');
         setIsProcessing(false);
         return;
       }
 
-      if (connectionMode === "voucher") {
-        setVoucherCode(String(data.voucher_code));
-      }
+      // Payment initiated - show user message
+      toast.success('Check your phone to complete the EcoCash payment!');
+      
+      // Store reference for polling/callback
+      const reference = data.reference;
+      
+      // Poll for payment status or wait for callback
+      // For now, we'll show a waiting state and check periodically
+      const checkPaymentStatus = async () => {
+        const { data: voucher } = await supabase
+          .from('vouchers')
+          .select('status, voucher_code, is_sold')
+          .eq('ecocash_ref', reference)
+          .single();
 
-      toast.success('Purchase successful!');
-      setPurchaseComplete(true);
+        if (voucher?.status === 'sold' && voucher?.is_sold) {
+          if (connectionMode === "voucher") {
+            setVoucherCode(voucher.voucher_code);
+          }
+          toast.success('Payment successful!');
+          setPurchaseComplete(true);
+          setIsProcessing(false);
+          return true;
+        }
+        return false;
+      };
+
+      // Poll every 3 seconds for up to 2 minutes
+      let attempts = 0;
+      const maxAttempts = 40;
+      const pollInterval = setInterval(async () => {
+        attempts++;
+        const completed = await checkPaymentStatus();
+        if (completed || attempts >= maxAttempts) {
+          clearInterval(pollInterval);
+          if (!completed && attempts >= maxAttempts) {
+            toast.error('Payment timeout. Please try again or check your transaction status.');
+            setIsProcessing(false);
+          }
+        }
+      }, 3000);
+
     } catch (err) {
       console.error('Payment error:', err);
       toast.error('An error occurred during payment');
-    } finally {
       setIsProcessing(false);
     }
   };
