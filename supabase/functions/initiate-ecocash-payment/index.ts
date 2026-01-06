@@ -109,8 +109,19 @@ serve(async (req) => {
       body: JSON.stringify(ecocashPayload),
     });
 
-    const ecocashData = await ecocashResponse.json();
-    console.log("EcoCash API response:", JSON.stringify(ecocashData));
+    // Handle empty or non-JSON responses
+    const responseText = await ecocashResponse.text();
+    console.log("EcoCash API raw response:", responseText, "Status:", ecocashResponse.status);
+    
+    let ecocashData: Record<string, unknown> = {};
+    if (responseText) {
+      try {
+        ecocashData = JSON.parse(responseText);
+      } catch {
+        console.log("EcoCash response is not JSON, treating as success if status OK");
+      }
+    }
+    console.log("EcoCash API parsed response:", JSON.stringify(ecocashData));
 
     if (!ecocashResponse.ok) {
       // Release the reserved voucher on failure
