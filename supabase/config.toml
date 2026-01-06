@@ -1,5 +1,8 @@
 project_id = "rdjtjzhulroqioyviaiw"
 
+[functions.check-ecocash-status]
+verify_jwt = false
+
 [functions.purchase-voucher]
 verify_jwt = false
 

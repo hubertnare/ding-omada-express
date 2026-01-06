@@ -170,7 +170,10 @@ const Index = () => {
     
     try {
       // Format phone for EcoCash (remove leading 0, add 263)
-      const formattedPhone = phoneNumber.replace(/^0/, "");
+      let formattedPhone = phoneNumber.replace(/\s+/g, "").replace(/^0/, "263");
+      if (!formattedPhone.startsWith("263")) {
+        formattedPhone = "263" + formattedPhone;
+      }
 
       // Initiate EcoCash payment
       const { data, error } = await supabase.functions.invoke('initiate-ecocash-payment', {
@@ -198,28 +201,37 @@ const Index = () => {
       // Payment initiated - show user message
       toast.success('Check your phone to complete the EcoCash payment!');
       
-      // Store reference for polling/callback
+      // Store reference for polling
       const reference = data.reference;
       
-      // Poll for payment status or wait for callback
-      // For now, we'll show a waiting state and check periodically
-      const checkPaymentStatus = async () => {
-        const { data: voucher } = await supabase
-          .from('vouchers')
-          .select('status, voucher_code, is_sold')
-          .eq('ecocash_ref', reference)
-          .single();
+      // Poll the EcoCash status API directly
+      const checkPaymentStatus = async (): Promise<{ completed: boolean; failed: boolean; voucherCode?: string }> => {
+        try {
+          const { data: statusData, error: statusError } = await supabase.functions.invoke('check-ecocash-status', {
+            body: { 
+              sourceReference: reference,
+              sourceMobileNumber: formattedPhone
+            },
+          });
 
-        if (voucher?.status === 'sold' && voucher?.is_sold) {
-          if (connectionMode === "voucher") {
-            setVoucherCode(voucher.voucher_code);
+          if (statusError) {
+            console.error('Status check error:', statusError);
+            return { completed: false, failed: false };
           }
-          toast.success('Payment successful!');
-          setPurchaseComplete(true);
-          setIsProcessing(false);
-          return true;
+
+          console.log('Payment status:', statusData);
+
+          if (statusData?.status === 'SUCCESS') {
+            return { completed: true, failed: false, voucherCode: statusData.voucherCode };
+          } else if (statusData?.status === 'FAILED') {
+            return { completed: false, failed: true };
+          }
+          
+          return { completed: false, failed: false };
+        } catch (err) {
+          console.error('Status check exception:', err);
+          return { completed: false, failed: false };
         }
-        return false;
       };
 
       // Poll every 3 seconds for up to 2 minutes
@@ -227,13 +239,24 @@ const Index = () => {
       const maxAttempts = 40;
       const pollInterval = setInterval(async () => {
         attempts++;
-        const completed = await checkPaymentStatus();
-        if (completed || attempts >= maxAttempts) {
+        const result = await checkPaymentStatus();
+        
+        if (result.completed) {
           clearInterval(pollInterval);
-          if (!completed && attempts >= maxAttempts) {
-            toast.error('Payment timeout. Please try again or check your transaction status.');
-            setIsProcessing(false);
+          if (connectionMode === "voucher" && result.voucherCode) {
+            setVoucherCode(result.voucherCode);
           }
+          toast.success('Payment successful!');
+          setPurchaseComplete(true);
+          setIsProcessing(false);
+        } else if (result.failed) {
+          clearInterval(pollInterval);
+          toast.error('Payment was declined. Please try again.');
+          setIsProcessing(false);
+        } else if (attempts >= maxAttempts) {
+          clearInterval(pollInterval);
+          toast.error('Payment timeout. Please try again or check your transaction status.');
+          setIsProcessing(false);
         }
       }, 3000);
 
