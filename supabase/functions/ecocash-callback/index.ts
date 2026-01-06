@@ -20,15 +20,19 @@ if (!supabaseUrl || !serviceRoleKey) {
 
 const admin = createClient(supabaseUrl ?? "", serviceRoleKey ?? "");
 
-// EcoCash callback payload structure (adjust based on actual EcoCash API docs)
+// EcoCash callback payload structure (based on actual sandbox response)
 interface EcoCashCallback {
+  // EcoCash sandbox uses these field names
+  clientReference?: string;
+  transactionOperationStatus?: string;
+  ecocashReference?: string;
+  // Fallback field names
   reference?: string;
   transaction_id?: string;
-  status: string; // e.g., "SUCCESS", "FAILED", "PENDING"
+  status?: string;
   amount?: number;
   phone_number?: string;
   timestamp?: string;
-  // Add other fields as per EcoCash documentation
 }
 
 serve(async (req) => {
@@ -50,19 +54,22 @@ serve(async (req) => {
     
     console.log("[EcoCash Callback] Received payload:", JSON.stringify(body));
 
-    // Get the reference (support multiple field names)
-    const reference = body.reference || body.transaction_id;
+    // Get the reference (support EcoCash sandbox field names)
+    const reference = body.clientReference || body.reference || body.transaction_id;
     
     if (!reference) {
-      console.error("[EcoCash Callback] Missing reference/transaction_id");
+      console.error("[EcoCash Callback] Missing reference/clientReference");
       return new Response(JSON.stringify({ error: "Missing reference" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    if (!body.status) {
-      console.error("[EcoCash Callback] Missing status");
+    // Get the status (support EcoCash sandbox field names)
+    const rawStatus = body.transactionOperationStatus || body.status;
+    
+    if (!rawStatus) {
+      console.error("[EcoCash Callback] Missing status/transactionOperationStatus");
       return new Response(JSON.stringify({ error: "Missing status" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -70,7 +77,7 @@ serve(async (req) => {
     }
 
     // Normalize status to uppercase for comparison
-    const paymentStatus = body.status.toUpperCase();
+    const paymentStatus = rawStatus.toUpperCase();
     
     console.log("[EcoCash Callback] Processing reference:", reference, "status:", paymentStatus);
 
